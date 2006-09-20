@@ -5,7 +5,7 @@
 #define _(String) gettext (String)
 
 SDL_Surface * screen;
-flag_t cflag = 0;
+flag_t cflag = 0, fullscreen = 0;
 int cur_shift = 0;
 int cur_width = 0;	/* 0 = narrow, !0 = wide */
 int horsize = 512, vertsize = 512;
@@ -61,17 +61,17 @@ static inline void putpixels(SDL_Surface * s, int x, Uint32 pixel)
     do *p++ = pixel; while (--n);
 }
 
-static void lock() {
+static inline void lock() {
 	/* Lock the screen for direct access to the pixels */
 	if ( SDL_MUSTLOCK(screen) ) {
 		if ( SDL_LockSurface(screen) < 0 ) {
-			fprintf(stderr, _("Can't lock screen: %s\n"), SDL_GetError());
+			logF(0, "Can't lock screen: %s\n", SDL_GetError());
 			return;
 		}
 	}
 }
 
-static void unlock() {
+static inline void unlock() {
     if ( SDL_MUSTLOCK(screen) ) {
 	SDL_UnlockSurface(screen);
     }
@@ -82,7 +82,7 @@ static void unlock() {
  * scrolling and line doubling are done during blitting. bufno is 0 or 1,
  * address is relative to the video buffer.
  */
-int scr_write(int bufno, c_addr addr, d_word wrd)
+void scr_write(int bufno, c_addr addr, d_word wrd)
 {
 	int offset, dest_x, dest_y;
 	SDL_Surface * s;
@@ -115,7 +115,6 @@ int scr_write(int bufno, c_addr addr, d_word wrd)
 			putpixels(s, dest_x, wrd & 3);
 		}
 	}
-	return OK;
 }
 
 /* In the bk_icon array, each word is in RGBA format;
@@ -169,13 +168,13 @@ setup_bases() {
     }
 }
 
+void
 scr_init() {
 
     extern unsigned bk_icon[];
     extern unsigned char * compute_icon_mask();
     static char init_done = 0;
     int i;
-    Uint32 bpp, rmask, gmask, bmask;
     if (init_done) return;
     init_done = 1;
 
@@ -187,8 +186,7 @@ scr_init() {
     screen = SDL_SetVideoMode(horsize, vertsize, 0,
 	 SDL_SWSURFACE|SDL_DOUBLEBUF|SDL_ANYFORMAT|SDL_HWPALETTE|SDL_RESIZABLE);
     if (screen == NULL) {
-        fprintf(stderr, _("Couldn't set up video: %s\n"),
-                        SDL_GetError());
+        logF(0, "Couldn't set up video: %s\n", SDL_GetError());
         exit(1);
     }
 
@@ -212,8 +210,7 @@ scr_init() {
 	lines[i] = SDL_CreateRGBSurface(SDL_SWSURFACE, 1024, 1,
 		8, 0, 0, 0, 0);
 	if (!lines[i]) {
-		fprintf(stderr, "Couldn't set up video: %s\n",
-			SDL_GetError());
+		logF(0, "Couldn't set up video: %s\n", SDL_GetError());
 		exit(1);
 	}
 	SDL_SetPalette(lines[i], SDL_LOGPAL,
@@ -233,6 +230,7 @@ scr_init() {
  * Switches to the new screen size, or, if called with (0, 0),
  * switches between color and B/W.
  */
+void
 scr_switch(int hsize, int vsize) {
     int i;
 
@@ -247,7 +245,8 @@ scr_switch(int hsize, int vsize) {
 	cflag = !cflag;
     }
     screen = SDL_SetVideoMode(horsize, vertsize, 0,
-	 SDL_SWSURFACE|SDL_ANYFORMAT|SDL_HWPALETTE|SDL_DOUBLEBUF|SDL_RESIZABLE);
+	 SDL_SWSURFACE|SDL_ANYFORMAT|SDL_HWPALETTE|SDL_DOUBLEBUF|
+	(fullscreen ? SDL_FULLSCREEN : SDL_RESIZABLE));
 
     setup_bases();   
 
@@ -265,8 +264,8 @@ scr_switch(int hsize, int vsize) {
  */
 unsigned current_scan_line() {
 	extern double half_frame_delay;
-	unsigned nframes = ticks/half_frame_delay;
-	unsigned frame_ticks = ticks - half_frame_delay * nframes;
+	unsigned nframes = pdp.clock/half_frame_delay;
+	unsigned frame_ticks = pdp.clock - half_frame_delay * nframes;
 	unsigned line = frame_ticks / scan_line_duration;
 	if (line < upper_porch) return 0;
 	line -= upper_porch;

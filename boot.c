@@ -46,7 +46,7 @@ void load_rom(unsigned start, char * rompath, unsigned min_size, unsigned max_si
 	if (!rompath || !*rompath) return;
 	path = malloc(strlen(romdir)+strlen(rompath)+2);
 
-	if (!path) { fprintf(stderr, _("No memory\n")); exit(1); }
+	if (!path) { logF(0, "No memory\n"); exit(1); }
 
 	/* If rompath is a real path, do not apply romdir to it */
 	if (*romdir && !strchr(rompath, '/'))
@@ -54,11 +54,11 @@ void load_rom(unsigned start, char * rompath, unsigned min_size, unsigned max_si
 	else
 		strcpy(path, rompath);
 
-	fprintf(stderr, _("Loading %s..."), path);
+	logF(0, "Loading ROM %s...", path);
 
-	romf = fopen(path, "r");
+	romf = fopen(path, "rb");
 	if (!romf) {
-		fprintf(stderr, _("Couldn't open file.\n"));
+		logF(0, "Couldn't open file.\n");
 		exit(1);
 	}
 	pdp_ram_map = ~0l;
@@ -71,12 +71,12 @@ void load_rom(unsigned start, char * rompath, unsigned min_size, unsigned max_si
 		sc_word(start, data);
 	}
 	if (i < min_size/2) {
-		fprintf(stderr, _("Incomplete or damaged file.\n"));
+		logF(0, "Incomplete or damaged file.\n");
 		exit(1);
 	}
 	fclose(romf);
 	free(path);
-        fprintf(stderr, _("Done.\n"));
+  logF(0, "Done.\n");
 	pdp_ram_map = saved_ram_map;
 }
 
@@ -90,7 +90,7 @@ void load_rom11(d_word * rom, int byte_off, char * rompath, int byte_size) {
 	if (!rompath || !*rompath) return;
 	path = malloc(strlen(romdir)+strlen(rompath)+2);
 
-	if (!path) { fprintf(stderr, _("No memory\n")); exit(1); }
+	if (!path) { logF(0, "No memory\n"); exit(1); }
 
 	/* If rompath is a real path, do not apply romdir to it */
 	if (*romdir && !strchr(rompath, '/'))
@@ -98,11 +98,11 @@ void load_rom11(d_word * rom, int byte_off, char * rompath, int byte_size) {
 	else
 		strcpy(path, rompath);
 
-	fprintf(stderr, _("Loading %s..."), path);
+	logF(0, "Loading %s...", path);
 
-	FILE * romf = fopen(path, "r");
+	FILE * romf = fopen(path, "rb");
 	if (!romf) {
-		fprintf(stderr, _("Couldn't open file.\n"));
+		logF(0, "Couldn't open file.\n");
 		exit(1);
 	}
 	rom += byte_off/2;
@@ -115,15 +115,15 @@ void load_rom11(d_word * rom, int byte_off, char * rompath, int byte_size) {
 		*rom = data;
 	}
 	if (i < byte_size/2) {
-		fprintf(stderr, _("Incomplete or damaged file.\n"));
+		logF(0, "Incomplete or damaged file.\n");
 		exit(1);
 	}
 	fclose(romf);
 	free(path);
-        fprintf(stderr, _("Done.\n"));
+  logF(0, "Done.\n");
 }
 
-int
+void
 boot_init()
 {
 	static unsigned char boot_done = 0;
@@ -148,9 +148,9 @@ boot_init()
 	/* Monitor must be exactly 8k */
 	load_rom(0100000, rompath10, 8192, 8192);
 
-        /* Basic or Focal ROM may be 24448 to 24576 bytes */
-        load_rom(0120000, rompath12, 24448, 24576);
+  /* Basic or Focal ROM may be 24448 to 24576 bytes */
+  load_rom(0120000, rompath12, 24448, 24576);
 
 	/* Disk controller BIOS is exactly 4k */
-        load_rom(0160000, rompath16, 4096, 4096);
+  load_rom(0160000, rompath16, 4096, 4096);
 }

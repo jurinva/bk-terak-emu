@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <malloc.h>
 #include <libintl.h>
 #include <locale.h>
@@ -9,7 +10,7 @@
 #define FAIL 1
 #define max(a, b) ((a) > (b) ? (a) : (b))
 
-get_strobe(len) int *len;
+int get_strobe(len) int *len;
 {
     static int old_strobe = 0;
     int c;
@@ -34,22 +35,121 @@ again:
     }
 }
 
-static polarity = 1;
-static threshold;
+static int polarity = 1;
+static int threshold;
 
-main() {
-	/* Gettext staff */
-        setlocale (LC_ALL, "");
-	bindtextdomain ("bk", "/usr/share/locale");
-	textdomain ("bk");
-
-	for (;;) do { do {
-	    find_header();
-	} while (OK != read_header());
-	} while (OK != read_data());
+int read_bit() {
+    int len1, len2, len3, len4;
+    while(polarity != get_strobe(&len1));
+    get_strobe(&len2);
+    get_strobe(&len3);
+    get_strobe(&len4);
+    return max(len1, len3) + max(len2, len4);
 }
 
-find_header() {
+static int file_length, start_addr;
+unsigned char header[025];
+
+int read_array(unsigned char *addr, int length)
+{
+    int len;
+    unsigned char * p = addr;
+    int i;
+    do {
+	while(get_strobe(&len) != polarity) fputc('.', stderr);
+    } while (len < threshold);
+    if (len > threshold * 2) {
+	fprintf(stderr, _("False header marker\n"));
+	return FAIL;
+    }
+    read_bit();
+    for (; length--;) {
+	unsigned char c = 0;
+	for(i = 0; i < 8; i++) {
+	    int l = read_bit();
+	    if (l < threshold / 2) {
+#if 0
+		fprintf(stderr, _("Too short (%d) assuming 0\n"), l);
+		fprintf(stderr, _("Tape position %0o\n"), ftell(stdin));
+#endif
+	    } else if (l > threshold * 2) {
+#if 0
+		fprintf(stderr, _("Too long (%d), assuming 1\n"), l);
+		fprintf(stderr, _("Tape position %0o\n"), ftell(stdin));
+#endif
+	    }
+	    if (l > threshold + 1) c |= 1 << i;
+	}
+	*p++ = c;
+    }
+    return OK;
+}
+
+int read_data()
+{
+	int checksum = 0;
+	int i, sum = 0;
+	unsigned char * array = calloc(file_length, 1);
+	if (FAIL == read_array(array, file_length)) {
+		fprintf(stderr, _("Failed\n"));
+		return FAIL;
+	}
+	for(i = 0; i < 16; i++) {
+	    if (read_bit() > threshold) checksum |= 1 << i;
+	}
+
+	for (i = 0; i < file_length; i++) {
+		sum += array[i];
+		if (sum & 0200000) sum = (sum & 0xFFFF) + 1;
+	}
+	if (sum != checksum) {
+		fprintf(stderr, _("Checksum error: read %06o, computed %06o\n"),
+			checksum, sum);
+		return FAIL;
+	} else {
+		fprintf(stderr, _("Checksum = %06o\n"), checksum);
+	}
+	/* Cut extra spaces from the end of file name */
+	for (i = 19; i > 4; i--)
+        	if (header[i] == ' ') header[i] = '\0';
+		else break;
+	FILE * out = fopen((char*)header+4, "wb");
+	if (!out) {
+        	perror((char*)header+4);
+        	return FAIL;
+	}
+	fputc(start_addr & 0xFF, out);
+	fputc(start_addr >> 8, out);
+	fputc(file_length & 0xFF, out);
+	fputc(file_length >> 8, out);
+	fwrite(array, file_length, 1, out);
+	fclose(out);
+	return OK;
+}
+
+void find_threshold() {
+    int sum = 0;
+    int i;
+    for (i = 0; i < 0200; i++)
+	sum += read_bit();
+    sum >>= 7;
+    threshold = sum + (sum >> 1);
+    fprintf(stderr, _("Threshold set to %d\n"), threshold);
+}
+
+int read_header()
+{
+    header[024] = '\0';
+    if (FAIL == read_array(header, 024)) return FAIL;
+    fprintf(stderr, _("Start address %06o, length %06o\n"),
+	start_addr = header[1] << 8 | header[0],
+	file_length = header[3] << 8 | header[2]
+    );
+    fprintf(stderr, _("File name: <%.16s>\n"), header + 4);
+    return OK;
+}
+
+void find_header() {
 	int strobe_cnt;
 	int strobe_len;
 	int len, val;
@@ -84,113 +184,18 @@ restart:
 	read_bit(); /* skip one bit */
 }
 
-find_threshold() {
-    int sum = 0;
-    int i;
-    for (i = 0; i < 0200; i++)
-	sum += read_bit();
-    sum >>= 7;
-    threshold = sum + (sum >> 1);
-    fprintf(stderr, _("Threshold set to %d\n"), threshold);
-}
+int main() {
+	/* Gettext staff */
+        setlocale (LC_ALL, "");
 
-read_bit() {
-    int len1, len2, len3, len4;
-    while(polarity != get_strobe(&len1));
-    get_strobe(&len2);
-    get_strobe(&len3);
-    get_strobe(&len4);
-    return max(len1, len3) + max(len2, len4);
-}
-
-static file_length, start_addr;
-unsigned char header[025];
-
-read_header()
-{
-    header[024] = '\0';
-    if (FAIL == read_array(header, 024)) return FAIL;
-    fprintf(stderr, _("Start address %06o, length %06o\n"),
-	start_addr = header[1] << 8 | header[0],
-	file_length = header[3] << 8 | header[2]
-    );
-    fprintf(stderr, _("File name: <% .16s>\n"), header + 4);
-    return OK;
-}
-
-read_data()
-{
-	int checksum = 0;
-	int i, sum = 0;
-	unsigned char * array = calloc(file_length, 1);
-	if (FAIL == read_array(array, file_length)) {
-		fprintf(stderr, _("Failed\n"));
-		return FAIL;
-	}
-	for(i = 0; i < 16; i++) {
-	    if (read_bit() > threshold) checksum |= 1 << i;
-	}
-
-	for (i = 0; i < file_length; i++) {
-		sum += array[i];
-		if (sum & 0200000) sum = (sum & 0xFFFF) + 1;
-	}
-	if (sum != checksum) {
-		fprintf(stderr, _("Checksum error: read %06o, computed %06o\n"),
-			checksum, sum);
-		return FAIL;
-	} else {
-		fprintf(stderr, _("Checksum = %06o\n"), checksum);
-	}
-	/* Cut extra spaces from the end of file name */
-	for (i = 19; i > 4; i--)
-        	if (header[i] == ' ') header[i] = '\0';
-		else break;
-	FILE * out = fopen(header+4, "w");
-	if (!out) {
-        	perror(header+4);
-        	return FAIL;
-	}
-	fputc(start_addr & 0xFF, out);
-	fputc(start_addr >> 8, out);
-	fputc(file_length & 0xFF, out);
-	fputc(file_length >> 8, out);
-	fwrite(array, file_length, 1, out);
-	fclose(out);
-}
-
-read_array(addr, length)
-unsigned char * addr;
-{
-    int len;
-    unsigned char * p = addr;
-    int i;
-    do {
-	while(get_strobe(&len) != polarity) fputc('.', stderr);
-    } while (len < threshold);
-    if (len > threshold * 2) {
-	fprintf(stderr, _("False header marker\n"));
-	return FAIL;
-    }
-    read_bit();
-    for (; length--;) {
-	unsigned char c = 0;
-	for(i = 0; i < 8; i++) {
-	    int l = read_bit();
-	    if (l < threshold / 2) {
+// GDG
 #if 0
-		fprintf(stderr, _("Too short (%d) assuming 0\n"), l);
-		fprintf(stderr, _("Tape position %0o\n"), ftell(stdin));
+	bindtextdomain ("bk", "/usr/share/locale");
+	textdomain ("bk");
 #endif
-	    } else if (l > threshold * 2) {
-#if 0
-		fprintf(stderr, _("Too long (%d), assuming 1\n"), l);
-		fprintf(stderr, _("Tape position %0o\n"), ftell(stdin));
-#endif
-	    }
-	    if (l > threshold + 1) c |= 1 << i;
-	}
-	*p++ = c;
-    }
-    return OK;
+
+	for (;;) do { do {
+	    find_header();
+	} while (OK != read_header());
+	} while (OK != read_data());
 }

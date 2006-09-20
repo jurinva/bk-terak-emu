@@ -1,40 +1,27 @@
+
 #include "defines.h"
 #include <fcntl.h>
 #include <stdio.h>
-#include <sys/ioctl.h>
+
 #include <libintl.h>
 #define _(String) gettext (String)
 
-unsigned char covox_val;
-unsigned int covox_age;
+static void covox_init() {
+// TODO: init covox sound
+}	// covox_init
 
-covox_init() {
-	covox_val = 0;
-	covox_age = ~0;
-}
-
-covox_read(c_addr addr, d_word *word)
-{
+static CPU_RES covox_read(c_addr addr, d_word *word) {
 	*word = 0;	/* pulldown */
-	return OK;
-}
+	return CPU_OK;
+}	// covox_read
 
-covox_write(c_addr addr, d_word word)
-{
-	covox_val = word & 0xFF;
-	covox_age = 0;
-	return OK;
-}
+static CPU_RES covox_write(c_addr addr, d_word word) {
+	covox_sample (word & 0xFF);
+	return CPU_OK;
+}	// covox_write
 
-covox_bwrite(c_addr addr, d_byte byte) {
-	d_word offset = addr & 1;
-	d_word word;
-	if (offset == 0) {
-		covox_val = byte;
-	} else {
-		covox_val = 0;
-	}
-	covox_age = 0;
-	return OK;
-}
+pdp_qmap q_covox = {
+	"covox", "COVOX audio",
+	PORT_REG, PORT_SIZE, covox_init, covox_read, covox_write, 0
+};
 

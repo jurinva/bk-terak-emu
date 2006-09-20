@@ -1,17 +1,15 @@
+
 #include "defines.h"
-#include "SDL/SDL.h"
 
 #define LOGARITHMIC
 
 d_word mouse_button_state;
-int grab_mode;
 unsigned short mouse_up, mouse_right, mouse_down,
 		 mouse_left, mouse_but0, mouse_strobe;
 
 int relx, rely;
 
-int
-mouse_init() {
+static void mouse_init() {
 	switch (mouseflag) {
 	case 1: /* mouse in lower byte */
 		mouse_up = 1;
@@ -29,31 +27,22 @@ mouse_init() {
 		mouse_but0 = 0x1000;
 		mouse_strobe = 0x8000;
 		break;
-	}	
-}
-
-void
-mouse_event(SDL_Event * pev) {
-	switch (pev->type) {
-	case SDL_MOUSEBUTTONDOWN:
-		if (pev->button.button == 3) {
-			/* middle button switches grab mode */
-			grab_mode ^= 1;
-			SDL_WM_GrabInput(grab_mode ? SDL_GRAB_ON : SDL_GRAB_OFF);			return;
-		}
-		mouse_button_state |= mouse_but0 << pev->button.button;
-		break;
-	case SDL_MOUSEBUTTONUP:
-		mouse_button_state &= ~(mouse_but0 << pev->button.button);
-		break;
-	case SDL_MOUSEMOTION:
-		relx += pev->motion.xrel;
-		rely += pev->motion.yrel;
-		break; 
 	}
-}
+}	// mouse_init
 
-int mouse_read(c_addr addr, d_word *word) {
+void mouse_buttonevent (int pressed, int button) {
+if (pressed)
+	mouse_button_state |= mouse_but0 << button;
+else
+	mouse_button_state &= ~(mouse_but0 << button);
+}	// mouse_buttonevent
+
+void mouse_moveevent (int xmove, int ymove) {
+relx += xmove;
+rely += ymove;
+}	// mouse_moveevent
+
+static CPU_RES mouse_read(c_addr addr, d_word *word) {
 	*word = mouse_button_state;
 	if (relx) {
 		*word |= relx > 0 ? mouse_right : mouse_left;
@@ -62,12 +51,12 @@ int mouse_read(c_addr addr, d_word *word) {
 		*word |= rely > 0 ? mouse_down : mouse_up;
 	}
 	/* fprintf(stderr, "Mouse %03o\n", *word); */
-	return OK;
-}
+	return CPU_OK;
+}	// mouse_read
 
-int mouse_write(c_addr addr, d_word word) {
+static CPU_RES mouse_write(c_addr addr, d_word word) {
 	if (word & mouse_strobe)
-		return OK;
+		return CPU_OK;
 	if (relx) {
 #ifdef LOGARITHMIC
 		relx = relx > 0 ? relx/2 : -(-relx/2);
@@ -82,18 +71,11 @@ int mouse_write(c_addr addr, d_word word) {
 		rely = rely > 0 ? rely-1 : rely+1;
 #endif
 	}
-	return OK;
-}
+	return CPU_OK;
+}	// mouse_write
 
-mouse_bwrite(c_addr addr, d_byte byte) {
-        d_word offset = addr & 1;
-        d_word word;
-        mouse_read(addr & ~1, &word);
-        if (offset == 0) {
-                word = (word & 0177400) | byte;
-        } else {
-                word = (byte << 8) | (word & 0377);
-        }
-        return mouse_write(addr & ~1, word);
-}
+pdp_qmap q_mouse = {
+	"mouse", "Mouse",
+	PORT_REG, PORT_SIZE, mouse_init, mouse_read, mouse_write, 0
+	};
 

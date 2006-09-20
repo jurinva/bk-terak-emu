@@ -33,7 +33,7 @@ serial_read() {
 	}
 	ret |= *data_ptr & (1<<bitnum++) ? DATA_BIT : 0;
 	if (!ser_in) {
-		ser_in = fopen("serial.in", "r");
+		ser_in = fopen("serial.in", "rb");
 	}
 	if (bitnum == 8) {
 		int c = getc(ser_in);

@@ -1,14 +1,22 @@
 #include "defines.h"
 #include <fcntl.h>
 #include <stdio.h>
-#include <sys/ioctl.h>
-#include <sys/mman.h>
+#include <unistd.h>
 #include <libintl.h>
 #define _(String) gettext (String)
+
+#include "mmap_emu.h"
 
 /* let's operate on 819200 byte images first */
 #define SECSIZE 512
 #define SECPERTRACK 10
+
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
+
+#define DISK_REG	0177130
+#define DISK_SIZE	2
 
 /* Why bother, let's memory-map the files! */
 typedef struct {
@@ -29,29 +37,27 @@ typedef struct {
 disk_t disks[4];
 static int selected = -1;
 
-void do_disk_io(int drive, int blkno, int nwords, int ioaddr);
-
 void disk_open(disk_t * pdt, char * name) {
-	int fd = open(name, O_RDWR);
+	int fd = open(name, O_RDWR|O_BINARY);
 	if (fd == -1) {
 		pdt->ro = 1;
-		fd = open(name, O_RDONLY);
+		fd = open(name, O_RDONLY|O_BINARY);
 	}
 	if (fd == -1) {
 		perror(name);
 		return;
 	}
 	pdt->length = lseek(fd, 0, SEEK_END);
+	if (pdt->length == -1) perror("seek");
 	if (pdt->length % SECSIZE) {
-		fprintf(stderr, _("%s is not an integer number of blocks\n"), name);
+		fprintf(stderr, _("%s is not an integer number of blocks: %d bytes\n"), name, pdt->length);
 		close(fd);
 		return;
 	}
-	pdt->image = mmap(0, pdt->length, PROT_READ | (pdt->ro ? 0 : PROT_WRITE), MAP_SHARED, fd, 0);
-	if (pdt->image == MAP_FAILED) {
-		pdt->image = 0;
+
+	if (! (pdt->image = file_map (fd, !pdt->ro, pdt->length)))
 		perror(name);
-	}
+
 	if (pdt->ro) {
 		fprintf(stderr, _("%s will be read only\n"), name);
 	}
@@ -59,7 +65,7 @@ void disk_open(disk_t * pdt, char * name) {
 
 /* Are there any interrupts to open or close ? */
 
-int disk_init() {
+void disk_init() {
 	static char init_done = 0;
 	int i;
 	if (!init_done) {
@@ -75,7 +81,6 @@ int disk_init() {
 		disks[i].motor = disks[i].inprogress = 0;
 	}
 	selected = -1;
-	return OK;
 }
 
 void disk_finish() {
@@ -83,15 +88,16 @@ void disk_finish() {
 	for (i = 0; i < 4; i++) {
 		if (!disks[i].image)
 			continue;
-		munmap(disks[i].image, disks[i].length);
+
+		file_unmap (disks[i].image, disks[i].length, !disks[i].ro);
+
 	}	
 }
 
 /* The index hole appears for 1 ms every 100 ms,
  */
 int index_flag() {
-	extern double ticks;
-	unsigned msec = ticks / (TICK_RATE/1000);
+	unsigned msec = pdp.clock / (TICK_RATE/1000);
 	return (msec % 100 == 0);
 }
 
@@ -151,8 +157,7 @@ disk_read_word(disk_t * pdt) {
 	return ret;
 }
 
-int
-disk_read(c_addr addr, d_word *word) {
+static CPU_RES disk_read(c_addr addr, d_word *word) {
 	d_word offset = addr - DISK_REG;
 	disk_t * pdt = &disks[selected];
 	int index;
@@ -188,17 +193,17 @@ disk_read(c_addr addr, d_word *word) {
 			pdp.regs[PC], *word);
 #endif
 		} else {
-			static dummy = 0x5555;
-			fprintf(stderr, _("Reading 177132 when no I/O is progress?\n"));
+			static d_word dummy = 0x0;
+			fprintf(stderr, "?");
+			// fprintf(stderr, _("Reading 177132 when no I/O is progress?\n"));
 			*word = dummy = ~dummy;
 		}
 	break;
 	}
-	return OK;
-}
+	return CPU_OK;
+}	// disk_read
 
-int
-disk_write(c_addr addr, d_word word) {
+static CPU_RES disk_write(c_addr addr, d_word word) {
 	d_word offset = addr - DISK_REG;
 	disk_t * pdt;
 	switch (offset) {
@@ -220,17 +225,18 @@ disk_write(c_addr addr, d_word word) {
 		if (selected >= 0) {
 			pdt = &disks[selected];
 			pdt->inprogress |= !! (word & 0400);
+			fprintf(stderr, "Drive %d i/o %s\n", selected,
+				pdt->inprogress ? "ON" : "OFF");
 		}
 		break;
 	case 2:
 		fprintf(stderr, _("Writing 177132, data %06o\n"), word);
 		break;
 	}
-	return OK;
-}
+	return CPU_OK;
+}	// disk_write
 
-int
-disk_bwrite(c_addr addr, d_byte byte) {
+static CPU_RES disk_bwrite(c_addr addr, d_byte byte) {
 	d_word offset = addr - DISK_REG;
 	switch (offset) {
 	case 0:
@@ -246,97 +252,13 @@ disk_bwrite(c_addr addr, d_byte byte) {
 		fprintf(stderr, _("Writing byte 177133, data %03o\n"), byte);
 		break;
 	}
-	return OK;
-}
+	return CPU_OK;
 
-#define ERRNO 052
+}	// disk_bwrite
 
-#define ADDR 026
-#define WCNT 030
-#define SIDE 032
-#define TRK 033
-#define UNIT 034
-#define SECTOR 035
+pdp_qmap q_disk = {
+	"disk", "Floppy controller",
+	DISK_REG, DISK_SIZE,
+	disk_init, disk_read, disk_write, disk_bwrite
+	};
 
-void fake_disk_io() {
-	d_word blkno = pdp.regs[0];
-	d_word nwords = pdp.regs[1];
-	c_addr ioaddr = pdp.regs[2];
-	c_addr parms = pdp.regs[3];
-	d_word drive;
-	lc_word(parms+UNIT, &drive);
-	drive &= 3;
-	do_disk_io(drive, blkno, nwords, ioaddr);
-}
-
-void fake_sector_io() {
-	c_addr parms = pdp.regs[3];
-	d_word drive;
-	d_word nwords, ioaddr, side, trk, sector;
-	int blkno;
-        lc_word(parms+UNIT, &drive);
-	lc_word(parms+ADDR, &ioaddr);
-	lc_word(parms+WCNT, &nwords);
-	sector = drive >> 8;
-	drive &= 3;
-	lc_word(parms+SIDE, &side);
-	trk = side >> 8;
-	side &= 1;
-	blkno = sector-1 + SECPERTRACK * (side + 2 * trk);
-	do_disk_io(drive, blkno, nwords, ioaddr);
-}
-
-void do_disk_io(int drive, int blkno, int nwords, int ioaddr) {
-	fprintf(stderr, _("%s block %d (%d words) from drive %d @ addr %06o\n"),
-		nwords & 0100000 ? _("Writing") : _("Reading"), blkno,
-		nwords & 0100000 ? -nwords & 0xffff : nwords, drive, ioaddr);
-	pdp.psw |= CC_C;
-	sl_byte(&pdp, ERRNO, 0);
-	if (disks[drive].image == 0) {
-		fprintf(stderr, _("Disk not ready\n"));
-		sl_byte(&pdp, ERRNO, 6);
-	} else if (blkno >= disks[drive].length / SECSIZE) {
-		fprintf(stderr, _("Block number %d too large for image size %d\n"),
-			blkno, disks[drive].length);
-		sl_byte(&pdp, ERRNO, 5);
-	} else if (nwords < 0100000) {
-		/* positive nwords means "read" */
-		int i;
-		for (i = 0;
-		i < nwords && 256 * blkno + i < disks[drive].length/2;
-		i++, ioaddr += 2) {
-			if (OK != sc_word(ioaddr, disks[drive].image[256 * blkno + i])) {
-				fprintf(stderr, _("Read failure @ %06o\n"), ioaddr);
-				sl_byte(&pdp, ERRNO, 7);
-				break;
-			}
-		}
-		if (i == nwords) pdp.psw &= ~CC_C;
-	} else if (!disks[drive].ro) {
-		int i;
-		/* negative nwords means "write" */
-		nwords = -nwords & 0xffff;
-		for (i = 0;
-		i < nwords && 256 * blkno + i < disks[drive].length/2;
-		i++, ioaddr += 2) {
-			d_word word;
-                        if (OK != lc_word(ioaddr, &word)) {
-                                fprintf(stderr, _("Write failure @ %06o\n"), ioaddr);
-				sl_byte(&pdp, ERRNO, 7);
-                                break;
-                        }
-			disks[drive].image[256 * blkno + i] = word; 
-                }
-                if (i == nwords) pdp.psw &= ~CC_C;
-
-	} else {
-		fprintf(stderr, _("Disk is read-only\n"));
-		sl_byte(&pdp, ERRNO, 1);
-	}
-	/* make all disk I/O ops 10 ms long */
-	ticks += TICK_RATE/100;
-
-	/* Fake RTS PC */
-        pop( &pdp, &pdp.regs[PC] );
-	fprintf(stderr, _("Done\n"));
-}

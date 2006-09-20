@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #define SYNCH 1000
 #include <libintl.h>
 #include <locale.h>
@@ -10,13 +12,13 @@
 #define putINM  beep(1, 8 * SYNCH)
 #define putOUTM beep(1, 4 * SYNCH), beep(0, 4 * SYNCH)
 
-beep(what, len) {
+int beep(int what, int len) {
 	putchar((what << 7) | (len >> 8));
 	putchar(len & 0xFF);
 	return 0;
 }
 
-putbyte(byte) {
+void putbyte(int byte) {
 	int i;
 	for (i = 0; i < 8; i++) {
 		if (byte & 1) put1; else put0;
@@ -24,7 +26,7 @@ putbyte(byte) {
 	}
 }
 
-putarray(p, l)
+void putarray(p, l)
 unsigned char * p; int l;
 {
 	int i;
@@ -32,7 +34,7 @@ unsigned char * p; int l;
 		putbyte(p[i]);
 }
 
-puttune(l) {
+void puttune(int l) {
 	while(l--) putSI;
 }
 
@@ -53,12 +55,16 @@ int putlen(FILE * in) {
 	return len;
 }
 
-main(argc, argv) int argc; char ** argv; {
+int main(int argc, char ** argv) {
 
         /* Gettext staff */
         setlocale (LC_ALL, "");
+
+// GDG
+#if 0
 	bindtextdomain ("bk", "/usr/share/locale");
         textdomain ("bk");
+#endif
 		
 	int i, sum = 0, len, namelen;
 	FILE * in;
@@ -66,7 +72,7 @@ main(argc, argv) int argc; char ** argv; {
 		fprintf(stderr, _("Usage: maketape BK_NAME infile > outfile\n"));
 		exit(1);
 	}
-	in = fopen(argv[2], "r");
+	in = fopen(argv[2], "rb");
 	/* If the file cannot be opened, make up a file with
 	 * start address 0, length 0, and a bad tune-up after the header.
 	 */
@@ -107,4 +113,5 @@ main(argc, argv) int argc; char ** argv; {
 	puttune(0400);
 	putOUTM;
 	put1;
+	exit(0);
 }

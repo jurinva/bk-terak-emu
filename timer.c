@@ -1,5 +1,8 @@
 #include "defines.h"
 
+#define TIMER_REG       0177706
+#define TIMER_SIZE      3
+
 d_word timer_count, timer_setup, timer_control;
 double ticks_start;
 unsigned int timer_period;
@@ -19,10 +22,7 @@ unsigned int timer_period;
  */
 #define PERIOD	128 
 
-timer_read(addr, word)
-c_addr addr;
-d_word *word;
-{
+static CPU_RES timer_read(c_addr addr, d_word *word) {
 	d_word offset = addr - TIMER_REG;
 	switch(offset) {
 	case 0: /* 177706 */
@@ -36,13 +36,10 @@ d_word *word;
 		timer_check();
 		*word = 0177400 | timer_control;
 	}
-	return OK;
-}
+	return CPU_OK;
+}	// timer_read
 
-timer_write(addr, word)
-c_addr addr;
-d_word word;
-{
+static CPU_RES timer_write(c_addr addr, d_word word) {
 	d_word offset = addr - TIMER_REG;
 	switch(offset) {
 	case 0: /* 177706 */
@@ -52,21 +49,18 @@ d_word word;
 		timer_setup = word;
 		break;
 	case 2: /* 177710 */
-		fprintf(stderr, _("Writing %06o to timer counter\n"), word);
+		logF(log_timer, "Writing %06o to timer counter\n", word);
 		/* timer_count = word; */
 		break;
 	case 4: /* 177712 */
-		/* fprintf(stderr, "Timer mode %03o\n", word & 0377); */
+		/* logF(log_timer, "Timer mode %03o\n", word & 0377); */
 		timer_setmode(word & 0377);
 		break;
 	}
-	return OK;
-}
+	return CPU_OK;
+}	// timer_write
 
-timer_bwrite(addr, byte)
-c_addr addr;
-d_byte byte;
-{
+static CPU_RES timer_bwrite(c_addr addr, d_byte byte) {
 	d_word offset = addr - TIMER_REG;
 	switch(offset) {
 	case 0: /* 177706 */
@@ -77,7 +71,7 @@ d_byte byte;
 		break;
 	case 2: /* 177710 */
 	case 3: /* 177711 */
-		fprintf(stderr, _("Writing %03o to timer counter\n"), byte);
+		logF(log_timer, "Writing %03o to timer counter\n", byte);
 		/* timer_count = byte; */
 		break;
 	case 4: /* 177712 */
@@ -87,14 +81,15 @@ d_byte byte;
 	case 5: /* 177713 */
 		break;
 	}
-	return OK;
-}
+	return CPU_OK;
+}	// timer_bwrite
 
+void
 timer_check() {
 	unsigned long delta;
 	if (!(timer_control & TIM_START))
 		return;
-	delta = (ticks - ticks_start) / timer_period;
+	delta = (pdp.clock - ticks_start) / timer_period;
 	if (delta == 0)
 		return;
 	if (timer_count > delta) {
@@ -119,11 +114,11 @@ timer_check() {
 	}
 }
 
-timer_setmode(mode)
-d_byte mode;
+void
+timer_setmode(d_byte mode)
 {
 	if (mode & TIM_UNKNOWN1) {
-		fprintf(stderr, _("Setting unknown timer mode bits\n"));
+		logF(log_timer, "Setting unknown timer mode bits\n");
 	}
 	timer_period = PERIOD;
 	if (mode & TIM_DIV16) {
@@ -134,13 +129,20 @@ d_byte mode;
 	}
 	if (!(timer_control & TIM_START) && (mode & TIM_START)) {
 		timer_count = timer_setup;
-		ticks_start = ticks;
+		ticks_start = pdp.clock;
 	}
 	timer_control = mode;
 }
 
-timer_init() {
+static void timer_init() {
 	timer_control = 0177400;
 	timer_count = 0177777;
 	timer_setup = 0011000;
-}
+}	// timer_init
+
+pdp_qmap q_timer = {
+	"timer", "System timer",
+	TIMER_REG, TIMER_SIZE,
+	timer_init, timer_read, timer_write, timer_bwrite
+	};
+

@@ -1,8 +1,10 @@
 #include "defines.h"
 #include <fcntl.h>
 #include <stdio.h>
-#include <sys/ioctl.h>
-#include <sys/mman.h>
+#include <unistd.h>
+
+#include "mmap_emu.h"
+
 #include <libintl.h>
 #define _(String) gettext (String)
 
@@ -53,11 +55,10 @@ void tdisk_open(tdisk_t * pdt, char * name) {
 		close(fd);
 		return;
 	}
-	pdt->image = mmap(0, pdt->length, PROT_READ | (pdt->ro ? 0 : PROT_WRITE), MAP_SHARED, fd, 0);
-	if (pdt->image == MAP_FAILED) {
-		pdt->image = 0;
+
+	if (! (pdt->image = file_map (fd, !pdt->ro, pdt->length)))
 		perror(name);
-	}
+
 	if (pdt->ro) {
 		fprintf(stderr, _("%s will be read only\n"), name);
 	}
@@ -65,7 +66,7 @@ void tdisk_open(tdisk_t * pdt, char * name) {
 
 /* Are there any interrupts to open or close ? */
 
-int tdisk_init() {
+void tdisk_init() {
 	static char init_done = 0;
 	int i;
 	if (!init_done) {
@@ -82,18 +83,16 @@ int tdisk_init() {
 		tdisks[i].inprogress = 0;
 	}
 	selected = -1;
-	return OK;
-}
+}	// tdisk_init
 
 void tdisk_finish() {
 	int i;
 	for (i = 0; i < 4; i++) {
 		if (!tdisks[i].image)
 			continue;
-		munmap(tdisks[i].image, tdisks[i].length);
-	}	
+		file_unmap (tdisks[i].image, tdisks[i].length, !tdisks[i].ro);
+	}
 }
-
 
 static inline unsigned unit(d_word word) {
 	return (word >> 8) & 3;
@@ -102,11 +101,10 @@ static inline unsigned unit(d_word word) {
 static inline disk_cmd cmd(d_word word) {
 	return (word >> 1) & 7;
 }
-int
-tdisk_read(c_addr addr, d_word *word) {
+
+static CPU_RES tdisk_read(c_addr addr, d_word *word) {
 	d_word offset = addr - TERAK_DISK_REG;
 	tdisk_t * pdt = &tdisks[selected];
-	int index;
 	switch(offset) {
 	case 0: /* status */
 		if (selected == -1) {
@@ -116,7 +114,7 @@ tdisk_read(c_addr addr, d_word *word) {
 		*word = (pdt->track ? 0 : track0F) | (pdt->ro ? wrprF : 0) | headF | doneF;
 		if (!pdt->inprogress) {
 		/* no operation started yet */
-			return OK;
+			return CPU_OK;
 		} else switch (pdt->cmd) {
 			case nopD:
 			case rtcD:
@@ -170,11 +168,10 @@ tdisk_read(c_addr addr, d_word *word) {
 		}
 	break;
 	}
-	return OK;
-}
+	return CPU_OK;
+}	// tdisk_read
 
-int
-tdisk_write(c_addr addr, d_word word) {
+static CPU_RES tdisk_write(c_addr addr, d_word word) {
 	d_word offset = addr - TERAK_DISK_REG;
 	tdisk_t * pdt;
 	switch (offset) {
@@ -189,19 +186,19 @@ tdisk_write(c_addr addr, d_word word) {
 		if (selected >= 0) {
 			pdt = &tdisks[selected];
 			if (pdt->inprogress)
-				return BUS_ERROR;
+				return CPU_BUS_ERROR;
 			pdt->inprogress = word & enF;
 			pdt->cmd = cmd(word);
 			if (pdt->inprogress && word & intrF) switch (pdt->cmd) {
 				case nopD:
-					ev_register(TTY_PRI, service, TICK_RATE*100/25, 0250);
+					ev_register(TTY_PRI, cpu_service, TICK_RATE*100/25, 0250);
 					break;
 				case rtcD:
-					ev_register(TTY_PRI, service, TICK_RATE/50, 0250);
+					ev_register(TTY_PRI, cpu_service, TICK_RATE/50, 0250);
 					break;
 				default:
 					fprintf(stderr, "Interrupt requested\n");
-					ev_register(TTY_PRI, service, TICK_RATE/1000, 0250);
+					ev_register(TTY_PRI, cpu_service, TICK_RATE/1000, 0250);
 			}
 		}
 		break;
@@ -209,10 +206,16 @@ tdisk_write(c_addr addr, d_word word) {
 		fprintf(stderr, _("Writing disk data reg, data %06o\n"), word);
 		break;
 	}
-	return OK;
-}
+	return CPU_OK;
+}	// tdisk_write
 
-int
-tdisk_bwrite(c_addr addr, d_byte byte) {
-	return disk_write(addr & ~1, byte);
-}
+static CPU_RES tdisk_bwrite(c_addr addr, d_byte byte) {
+	return tdisk_write(addr & ~1, byte);
+}	// tdisk_bwrite
+
+pdp_qmap qmap_tdisk[] = { {
+	"terakdisk", "Terak disk",
+	TERAK_DISK_REG, TERAK_DISK_SIZE,
+	tdisk_init, tdisk_read, tdisk_write, tdisk_bwrite
+	} };
+

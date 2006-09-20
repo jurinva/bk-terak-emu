@@ -1,7 +1,8 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/param.h>
 
-main(int argc, char ** argv) {
+int main(int argc, char ** argv) {
 	int i;
 	FILE * rgb, * alpha;
 	int width, height, awidth, aheight;

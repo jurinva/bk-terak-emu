@@ -1,30 +1,29 @@
 #include "defines.h"
 #include <fcntl.h>
 #include <stdio.h>
-#include <sys/ioctl.h>
+
+// GDG
+
 #include <libintl.h>
 #define _(String) gettext (String)
 
-#include <fcntl.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <unistd.h>
 #include <string.h>
-#include <sys/ioctl.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/uio.h>
-#include <sys/socket.h>
 
 #ifdef linux
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+
+#include <sys/types.h>
+#include <sys/time.h>
+
+#include <sys/uio.h>
+
 #include <sys/ioctl.h>
 #include <linux/if.h>
 #include <linux/if_tun.h>
 #define DEVTAP "/dev/net/tun"
-#else  /* linux */
-#error "TUN device only exists in Linux"
-#endif /* linux */
 
 static int fd = -1;
 static unsigned char plip_buf[1500];
@@ -35,8 +34,9 @@ static unsigned lasttime;
  * to receive 16 bit; that is, from PC to BK a whole byte can
  * be sent at once.
  */
-bkplip_init() {
-  if (fd != -1) return OK;
+void bkplip_init() {
+
+  if (fd != -1) return;
 
   fd = open(DEVTAP, O_RDWR);
   if(fd == -1) {
@@ -55,31 +55,29 @@ bkplip_init() {
   }
 
   lasttime = 0;
-  return OK;
 }
 
 static int len_left = 0;
 static int curbyte = 0;
-static flag_t nibble = 0;
 static int txlen = 0, txbyte = 0;
+
 /*
  * When no data is present, returns 0.
  * If a packet is present, returns its length (a word) with bit 15 set,
  * then its contents (N bytes). Each read returns a new byte, no strobing yet.
  */
-bkplip_read(addr, word)
-c_addr addr;
-d_word *word;
-{
+
+static CPU_RES bkplip_read(c_addr addr, d_word *word) {
+
   fd_set fdset;
-  struct timeval tv, now;
+  struct timeval tv;
   int ret;
 
   if (len_left) {
 	*word = plip_buf[curbyte];
 	curbyte++;
 	len_left--;
-	return OK;
+	return CPU_OK;
   }
 
   tv.tv_sec = 0;
@@ -91,7 +89,7 @@ d_word *word;
   if(ret == 0) {
     *word = 0;
     lasttime = 0;    
-    return OK;
+    return CPU_OK;
   } 
   ret = read(fd, plip_buf, 1500);  
   if(ret == -1) {
@@ -102,32 +100,31 @@ d_word *word;
   *word = 1<<15 | ret;
 
   printf("Got packet of length %d\n", ret);
-  return OK;
+  return CPU_OK;
+
 }
 
 /*
  * Expects a packet length (a word) with bit 15 set,
  * then N bytes. Each write transmits a byte, no strobing yet.
  */
-bkplip_write(addr, word)
-c_addr addr;
-d_word word;
-{
+static CPU_RES bkplip_write(c_addr addr, d_word word) {
+
 	if (word & (1<<15)) {
 		if (txlen) {
 			printf("Sending new packet when %d bytes left from the old one\n",
 			txlen);
-			return BUS_ERROR;
+			return CPU_BUS_ERROR;
 		}
 		txlen = word & 0x7fff;
 		txbyte = 0;
 		if (txlen > 1500) {
 			printf("Transmit length %d???\n", txlen);
-			return BUS_ERROR;
+			return CPU_BUS_ERROR;
 		}
-		return OK;
+		return CPU_OK;
 	}
-	if (!txlen) return OK;
+	if (!txlen) return CPU_OK;
 	plip_buf_tx[txbyte] = word & 0xff;
 	txlen--;
 	txbyte++;
@@ -135,10 +132,12 @@ d_word word;
 		printf("Sending packet of length %d\n", txbyte);
 		write(fd, plip_buf_tx, txbyte);
 	}
-	return OK;
+	return CPU_OK;
+
 }
 
-bkplip_bwrite(c_addr addr, d_byte byte) {
+static CPU_RES bkplip_bwrite(c_addr addr, d_byte byte) {
+
 	d_word offset = addr & 1;
 	d_word word;
 	bkplip_read(addr & ~1, &word);
@@ -148,5 +147,26 @@ bkplip_bwrite(c_addr addr, d_byte byte) {
 		word = (byte << 8) | (word & 0377);
 	}
 	return bkplip_write(addr & ~1, word);
+
 }
+
+#else
+void bkplip_init()  { }
+static CPU_RES bkplip_read(c_addr addr, d_word *word) {
+	return CPU_OK;
+}
+
+static CPU_RES bkplip_write(c_addr addr, d_word byte) {
+	return CPU_OK;
+}
+
+static CPU_RES bkplip_bwrite(c_addr addr, d_byte byte) {
+	return CPU_OK;
+}
+#endif
+
+pdp_qmap q_bkplip = {
+	"bkplip", "BK parallel port interface",
+	PORT_REG, PORT_SIZE, bkplip_init, bkplip_read, bkplip_write, bkplip_bwrite
+};
 

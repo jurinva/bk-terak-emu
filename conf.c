@@ -47,15 +47,32 @@ iconf_t iconf[] = {
 
 bconf_t bconf[] = {
 	{ "FakeTape", &fake_tape },
+        { "Color", &cflag },
+        { "FakeDisk", &fake_disk },
+        { "FullScreen", &fullscreen },
 	{ "Telegraph", &telegraph_enabled }
+
 };
 
 #define NUM_SATTR (sizeof(sconf)/sizeof(sconf_t))
 #define NUM_IATTR (sizeof(iconf)/sizeof(iconf_t))
 #define NUM_BATTR (sizeof(bconf)/sizeof(bconf_t))
 
+FILE *at_home (char *name) {
+char *home = getenv("HOME");
+char buffer[512];
+
+if (home) {
+	sprintf (buffer, "%s/%s", home, name);
+	name = buffer;
+	}
+
+return fopen (name, "r");
+}	// at_home
+
+void
 init_config() {
-	FILE * bkrc = popen("cat $HOME/.bkrc", "r");
+	FILE * bkrc = at_home(".bkrc");
 	char buf[1024];
 	char name[1024];
 	char sval[1024];

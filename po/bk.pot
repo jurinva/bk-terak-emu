@@ -7,7 +7,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2003-09-22 23:15+0400\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2005-05-13 09:37-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,240 +16,313 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: access.c:101
+#: ../access.c:233
 #, c-format
 msgid "Illegal read address %06o:"
 msgstr ""
 
-#: access.c:136
+#: ../access.c:356
 #, c-format
-msgid "Illegal write address %06o:"
+msgid "@%06o Illegal write address %06o:"
 msgstr ""
 
-#: access.c:234
+#: ../access.c:437
 #, c-format
 msgid "Illegal byte write address %06o:"
 msgstr ""
 
-#: access.c:304
+#: ../access.c:514
 #, c-format
 msgid "Writing to ROM addr %06o:"
 msgstr ""
 
-#: access.c:309
+#: ../access.c:519
 #, c-format
 msgid "Writing byte to ROM addr %06o:"
 msgstr ""
 
-#: boot.c:42 boot.c:67
+#: ../boot.c:49 ../boot.c:93
+#, c-format
 msgid "No memory\n"
 msgstr ""
 
-#: boot.c:50
+#: ../boot.c:57 ../boot.c:101
 #, c-format
 msgid "Loading %s..."
 msgstr ""
 
-#: boot.c:54
+#: ../boot.c:61 ../boot.c:105
+#, c-format
 msgid "Couldn't open file.\n"
 msgstr ""
 
-#: boot.c:59 boot.c:71
+#: ../boot.c:74 ../boot.c:118
+#, c-format
 msgid "Incomplete or damaged file.\n"
 msgstr ""
 
-#: boot.c:80 sound.c:119
+#: ../boot.c:79 ../boot.c:123 ../sound.c:123
+#, c-format
 msgid "Done.\n"
 msgstr ""
 
-#: disas.c:217
+#: ../conf.c:74
+#, c-format
+msgid "Bad configuration line: %s\n"
+msgstr ""
+
+#: ../conf.c:83
+#, c-format
+msgid "String value for %s is required\n"
+msgstr ""
+
+#: ../conf.c:98
+#, c-format
+msgid "Integer value for %s is required\n"
+msgstr ""
+
+#: ../conf.c:105
+#, c-format
+msgid "Value of %s must be in range [%d:%d]\n"
+msgstr ""
+
+#: ../conf.c:119
+#, c-format
+msgid "Boolean value for %s is required\n"
+msgstr ""
+
+#: ../conf.c:140
+#, c-format
+msgid "Boolean value for %s is required (got %c)\n"
+msgstr ""
+
+#: ../conf.c:148
+#, c-format
+msgid "Unknown attribute %s\n"
+msgstr ""
+
+#: ../conf.c:152
+#, c-format
+msgid "There were %d errors in the configuration file, aborting.\n"
+msgstr ""
+
+#: ../disas.c:220
 #, c-format
 msgid "ERROR code %c"
 msgstr ""
 
-#: disk.c:49
+#: ../disk.c:46
+#, c-format
+msgid "%s is not an integer number of blocks, truncating\n"
+msgstr ""
+
+#: ../disk.c:55
 #, c-format
 msgid "%s will be read only\n"
 msgstr ""
 
-#: disk.c:146
+#: ../disk.c:161
+#, c-format
 msgid "Reading 177130, returned 0\n"
 msgstr ""
 
-#: disk.c:162
+#: ../disk.c:191
 #, c-format
-msgid "Reading 177130 @%06o, returned %06o\n"
-msgstr ""
-
-#: disk.c:168
-#, c-format
-msgid "Reading 177132 @%06o, returned %06o\n"
-msgstr ""
-
-#: disk.c:172
 msgid "Reading 177132 when no I/O is progress?\n"
 msgstr ""
 
 #. Print a message if something other than turning
 #. * all drives off is requested
 #.
-#: disk.c:190
+#: ../disk.c:209
 #, c-format
 msgid "Writing 177130, data %06o\n"
 msgstr ""
 
-#: disk.c:206
+#: ../disk.c:225
 #, c-format
 msgid "Writing 177132, data %06o\n"
 msgstr ""
 
-#: disk.c:217
+#: ../disk.c:236
 #, c-format
 msgid "Writing byte 177130, data %03o\n"
 msgstr ""
 
-#: disk.c:220
+#: ../disk.c:239
 #, c-format
 msgid "Writing byte 177131, data %03o\n"
 msgstr ""
 
-#: disk.c:223
+#: ../disk.c:242
 #, c-format
 msgid "Writing byte 177132, data %03o\n"
 msgstr ""
 
-#: disk.c:226
+#: ../disk.c:245
 #, c-format
 msgid "Writing byte 177133, data %03o\n"
 msgstr ""
 
-#: disk.c:240
+#: ../disk.c:289
 #, c-format
 msgid "%s block %d (%d words) from drive %d @ addr %06o\n"
 msgstr ""
 
-#: disk.c:241
+#: ../disk.c:290
 msgid "Writing"
 msgstr ""
 
-#: disk.c:241
+#: ../disk.c:290
 msgid "Reading"
 msgstr ""
 
-#: disk.c:245
+#: ../disk.c:295
+#, c-format
 msgid "Disk not ready\n"
 msgstr ""
 
-#: disk.c:247
-msgid "Block number too large\n"
+#: ../disk.c:298
+#, c-format
+msgid "Block number %d too large for image size %d\n"
 msgstr ""
 
-#: disk.c:255
+#: ../disk.c:308
 #, c-format
 msgid "Read failure @ %06o\n"
 msgstr ""
 
-#: disk.c:269
+#: ../disk.c:323
 #, c-format
 msgid "Write failure @ %06o\n"
 msgstr ""
 
-#: disk.c:279
+#: ../disk.c:332
+#, c-format
+msgid "Disk is read-only\n"
+msgstr ""
+
+#: ../disk.c:340
+#, c-format
 msgid "Done\n"
 msgstr ""
 
-#: io.c:128
-#, c-format
-msgid "Reading %06o\n"
-msgstr ""
-
-#: io.c:145
-#, c-format
-msgid "Writing %03o to %06o\n"
-msgstr ""
-
-#: main.c:93
+#: ../main.c:116
 #, c-format
 msgid "Usage: %s [options]\n"
 msgstr ""
 
-#: main.c:94
-msgid "   -0        BK-0010 (Focal and tape)\n"
+#: ../main.c:117
+#, c-format
+msgid "   -0        BK-0010\n"
 msgstr ""
 
-#: main.c:95
-msgid "   -1        BK-0010.01 (Basic and tape)\n"
+#: ../main.c:118
+#, c-format
+msgid "   -1        BK-0010.01\n"
 msgstr ""
 
-#: main.c:96
-msgid "   -2        BK-0010.01+FDD (No basic, floppy)\n"
+#: ../main.c:119
+#, c-format
+msgid "   -2        BK-0010.01 + FDD\n"
 msgstr ""
 
-#: main.c:97
+#: ../main.c:120
+#, c-format
+msgid "   -3        BK-0011M + FDD\n"
+msgstr ""
+
+#: ../main.c:121
+#, c-format
+msgid "   -K        Terak 8510/a\n"
+msgstr ""
+
+#: ../main.c:122
 #, c-format
 msgid "   -A<file>  A: floppy image file or device (instead of %s)\n"
 msgstr ""
 
-#: main.c:98
+#: ../main.c:123
 #, c-format
 msgid "   -B<file>  B: floppy image file or device (instead of %s)\n"
 msgstr ""
 
-#: main.c:99
+#: ../main.c:124
 #, c-format
 msgid "   -C<file>  C: floppy image file or device (instead of %s)\n"
 msgstr ""
 
-#: main.c:100
+#: ../main.c:125
 #, c-format
 msgid "   -D<file>  D: floppy image file or device (instead of %s)\n"
 msgstr ""
 
-#: main.c:101
+#: ../main.c:126
+#, c-format
 msgid "   -a        Do not boot automatically\n"
 msgstr ""
 
-#: main.c:102
+#: ../main.c:127
+#, c-format
 msgid "   -c        Color mode\n"
 msgstr ""
 
-#: main.c:103
-msgid "   -d        Double size mode\n"
+#: ../main.c:128
+#, c-format
+msgid "   -n        Disable sound \n"
 msgstr ""
 
-#: main.c:104
-msgid "   -n        Disable speaker\n"
+#: ../main.c:129
+#, c-format
+msgid "   -v        Enable Covox\n"
 msgstr ""
 
-#: main.c:105
-msgid "   -m        Disable mouse\n"
+#: ../main.c:130
+#, c-format
+msgid "   -y        Enable AY-3-8910\n"
 msgstr ""
 
-#: main.c:106
-msgid "   -f        Full speed mode\n"
+#: ../main.c:131
+#, c-format
+msgid "   -m        Enable mouse\n"
 msgstr ""
 
-#: main.c:107
+#: ../main.c:132
+#, c-format
+msgid "   -S        Full speed mode\n"
+msgstr ""
+
+#: ../main.c:133
+#, c-format
+msgid "   -s        \"TURBO\" mode (Real overclocked BK)\n"
+msgstr ""
+
+#: ../main.c:134
+#, c-format
 msgid "   -R<file>  Specify an alternative ROM file @ 120000.\n"
 msgstr ""
 
-#: main.c:108
+#: ../main.c:135
+#, c-format
 msgid "   -r<file>  Specify an alternative ROM file @ 160000.\n"
 msgstr ""
 
-#: main.c:109
+#: ../main.c:136
+#, c-format
 msgid "   -T        Disable reading from tape\n"
 msgstr ""
 
-#: main.c:110
-msgid "   -t        Trace mode\n"
+#: ../main.c:137
+#, c-format
+msgid "   -t        Trace mode, -t<file> - to file\n"
 msgstr ""
 
-#: main.c:111
-msgid "   -l<path>  Set printer pathname\n"
+#: ../main.c:138
+#, c-format
+msgid "   -l<path>  Enable printer and specify output pathname\n"
 msgstr ""
 
-#: main.c:112
+#: ../main.c:139
 #, c-format
 msgid ""
 "\n"
@@ -257,495 +331,586 @@ msgid ""
 "by the environment variable BK_PATH.\n"
 msgstr ""
 
-#: main.c:116
+#: ../main.c:143
+#, c-format
 msgid ""
 "\n"
 "Examples:.\n"
 msgstr ""
 
-#: main.c:117
+#: ../main.c:144
+#, c-format
 msgid "   'bk -R./BK.ROM' - Use custom ROM\n"
 msgstr ""
 
-#: main.c:118
+#: ../main.c:145
+#, c-format
 msgid "   'bk -a -n -f'   - Developer's mode\n"
 msgstr ""
 
-#: main.c:119
+#: ../main.c:146
+#, c-format
 msgid ""
-"   'bk -c -D'      - Gaming mode\n"
+"   'bk -c -d'      - Gaming mode\n"
 "\n"
 msgstr ""
 
 #. Unknown ROM configuration
-#: main.c:151
+#: ../main.c:187
+#, c-format
 msgid "Unknown BK model. Bailing out.\n"
 msgstr ""
 
-#: main.c:155
+#: ../main.c:196
+#, c-format
 msgid "Initializing SDL.\n"
 msgstr ""
 
-#: main.c:158
+#: ../main.c:199
 #, c-format
 msgid "Could not initialize SDL: %s.\n"
 msgstr ""
 
-#: main.c:162
-msgid "SDL initialized.\n"
-msgstr ""
-
-#. initialize the tty stuff
-#. initialize the event system
-#. ...the simulated cpu
-#. ...main memory
-#. ...any devices
-#. let it be
-#: main.c:171
+#: ../main.c:203
+#, c-format
 msgid ""
 "Welcome to \"Elektronika BK\" emulator!\n"
 "\n"
 msgstr ""
 
-#: main.c:342
+#. print a short emulator help message
+#. print a short help message
+#: ../main.c:207
+#, c-format
+msgid "SDL initialized.\n"
+msgstr ""
+
+#: ../main.c:410
 #, c-format
 msgid "Instructions executed: %d\n"
 msgstr ""
 
-#: main.c:343
+#: ../main.c:411
 #, c-format
 msgid "Simulation rate: %.5g instructions per second\n"
 msgstr ""
 
-#: main.c:345
+#: ../main.c:413
 #, c-format
-msgid "BK-0010 speed: %.5g instructions per second\n"
+msgid "BK speed: %.5g instructions per second\n"
 msgstr ""
 
-#: main.c:407
+#: ../main.c:479
 #, c-format
 msgid " pc=%06o, last branch @ %06o\n"
 msgstr ""
 
-#: main.c:415
+#: ../main.c:488
 #, c-format
 msgid "Illegal inst. %s, last branch @ %06o\n"
 msgstr ""
 
-#: main.c:446
+#: ../main.c:518
+#, c-format
 msgid ""
 "\n"
 "Unexpected return.\n"
 msgstr ""
 
-#: main.c:447
+#: ../main.c:519
 #, c-format
 msgid "exec=%d pc=%06o ir=%06o\n"
 msgstr ""
 
-#: main.c:454 main.c:461
+#: ../main.c:526 ../main.c:535
 #, c-format
 msgid ""
 "\n"
 "Double trap @ %06o.\n"
 msgstr ""
 
-#: main.c:502
+#: ../main.c:590
+#, c-format
 msgid ""
 "\n"
 "Execution interrupted.\n"
 msgstr ""
 
-#: main.c:545
-msgid "WAIT instruction\n"
-msgstr ""
-
-#: main.c:579
+#: ../main.c:631
+#, c-format
 msgid "Simulating tune-up sequence\n"
 msgstr ""
 
-#: main.c:583
+#: ../main.c:637
+#, c-format
 msgid "Simulating reading array with tune-up\n"
 msgstr ""
 
-#: main.c:599
+#: ../main.c:656
+#, c-format
 msgid ""
 "Emulator window hotkeys:\n"
 "\n"
 msgstr ""
 
-#: main.c:600
-msgid " ScrollLock - Toggle video mode (B/W, Color) and doublesized display\n"
+#: ../main.c:657
+#, c-format
+msgid " ScrollLock - Toggle video mode (B/W, Color)\n"
 msgstr ""
 
-#: main.c:601
+#: ../main.c:658
+#, c-format
 msgid " Left Super+F11 - Reset emulated machine\n"
 msgstr ""
 
-#: main.c:602
+#: ../main.c:659
+#, c-format
 msgid ""
 " F12 - Load a file into BK memory\n"
 "\n"
 msgstr ""
 
-#: main.c:607
+#: ../main.c:664
 msgid ""
 "BK0010 MONITOR (the OS) commands:\n"
 "\n"
-" 'A' to 'K' - Quit MONITOR.\n"
-" 'M' - Read from tape. Press 'Enter' and type in the filename of\n"
-"       the desired .bin snapshot. Wait until the data loads into\n"
-"       the memory or use F12 instead.\n"
-" 'S' - Start execution. You can specify an address to start from.\n"
+" 'A' to 'K'  - Quit MONITOR.\n"
+" 'M'         - Read from tape. Press 'Enter' and type in the filename of\n"
+"               the desired .bin snapshot. Wait until the data loads into\n"
+"               the memory or use F12 instead.\n"
+" 'S'         - Start execution. You can specify an address to start from.\n"
 msgstr ""
 
-#: main.c:617
+#: ../main.c:671
+msgid ""
+"BK0011M BOS commands:\n"
+"\n"
+" 'B'         - Boot from any bootable floppy.\n"
+" 'xxxB'      - Boot from the floppy drive xxx.\n"
+" 'L'         - Load file from tape\n"
+" 'xxxxxxL'   - Load file to address xxxxxx.\n"
+" 'M' or '0M' - Turn the tape-recoder on.\n"
+" 'xM'        - Turn the tape-recoder off.\n"
+" 'G'         - Run currently loaded program.\n"
+" 'xxxxxxG'   - Run from address xxxxxx.\n"
+" 'P'         - Continue after the STOP key press or HALT.\n"
+" 'Step'      - Execute a single instruction and return to MONITOR.\n"
+" 'Backspace' - Delete last digit (digits only).\n"
+" 'xxxxxx/'   - Open word xxxxxx (octal) in memory for editing.\n"
+" 'xxxxxx\\'   - Open byte xxxxxx (octal) in memory for editing.\n"
+" 'Rx'        - Open system register x for editing.\n"
+" 'Enter'     - Close opened memory cell and accept changes.\n"
+" 'Up'        - Move to the next memory cell and accept changes.\n"
+" 'Down'      - Move to the previous memory cell and accept changes\n"
+" 'Left'      - Jump to address <address>+<word>+2 (\"67\" addressing).\n"
+" 'Right'     - Jump to address <address>+<byte>*2+2 (assembler 'BR' jump)\n"
+" '@'         - Close and jump to the address stored in the current memory "
+"cell.\n"
+" 'N;MC'      - Map memory page N (octal) to address range M (octal).\n"
+msgstr ""
+
+#: ../main.c:697
+#, c-format
 msgid ""
 " 'T' - Run built-in tests.\n"
 "\n"
 msgstr ""
 
-#: main.c:618
+#: ../main.c:698
+#, c-format
 msgid "Type 'P M' to quit FOCAL and get the MONITOR prompt.\n"
 msgstr ""
 
-#: main.c:619
+#: ../main.c:699
+#, c-format
 msgid ""
 "Type 'P T' to enter the test mode. 1-5 selects a test.\n"
 "\n"
 msgstr ""
 
-#: main.c:623
+#: ../main.c:703
+#, c-format
 msgid ""
 "\n"
 "Type 'MO' to quit BASIC VILNIUS 1986 and get the MONITOR prompt.\n"
 "\n"
 msgstr ""
 
-#: main.c:627
+#: ../main.c:707
+#, c-format
 msgid ""
 "\n"
 "Type 'S160000' to boot from floppy A:.\n"
 msgstr ""
 
-#: main.c:628
+#: ../main.c:708
+#, c-format
 msgid ""
 "The BASIC ROM is disabled.\n"
 "\n"
 msgstr ""
 
-#: maketape.c:65
+#: ../main.c:712
+#, c-format
+msgid ""
+"\n"
+"BK-0011M boots automatically from the first floppy drive available.\n"
+"\n"
+msgstr ""
+
+#: ../maketape.c:66
+#, c-format
 msgid "Usage: maketape BK_NAME infile > outfile\n"
 msgstr ""
 
 #. checksum
-#: maketape.c:101
+#: ../maketape.c:102
 #, c-format
 msgid "checksum = %06o\n"
 msgstr ""
 
-#: readtape.c:17
+#: ../readtape.c:18
+#, c-format
 msgid "Tape ended\n"
 msgstr ""
 
-#: readtape.c:69
+#: ../readtape.c:70
+#, c-format
 msgid "Found start tune-up sequence\n"
 msgstr ""
 
-#: readtape.c:80
+#: ../readtape.c:81
 #, c-format
 msgid "Skipped %d strobes to find marker\n"
 msgstr ""
 
-#: readtape.c:82
+#: ../readtape.c:83
 #, c-format
 msgid "Polarity set to %d\n"
 msgstr ""
 
-#: readtape.c:93
+#: ../readtape.c:94
 #, c-format
 msgid "Threshold set to %d\n"
 msgstr ""
 
-#: readtape.c:112
+#: ../readtape.c:113
 #, c-format
 msgid "Start address %06o, length %06o\n"
 msgstr ""
 
-#: readtape.c:116
+#: ../readtape.c:117
 #, c-format
 msgid "File name: <% .16s>\n"
 msgstr ""
 
-#: readtape.c:126
+#: ../readtape.c:127
+#, c-format
 msgid "Failed\n"
 msgstr ""
 
-#: readtape.c:138
+#: ../readtape.c:139
 #, c-format
 msgid "Checksum error: read %06o, computed %06o\n"
 msgstr ""
 
-#: readtape.c:142
+#: ../readtape.c:143
 #, c-format
 msgid "Checksum = %06o\n"
 msgstr ""
 
-#: readtape.c:171
+#: ../readtape.c:172
+#, c-format
 msgid "False header marker\n"
 msgstr ""
 
-#: readtape.c:181
+#: ../readtape.c:182
 #, c-format
 msgid "Too short (%d) assuming 0\n"
 msgstr ""
 
-#: readtape.c:182 readtape.c:187
+#: ../readtape.c:183 ../readtape.c:188
 #, c-format
 msgid "Tape position %0o\n"
 msgstr ""
 
-#: readtape.c:186
+#: ../readtape.c:187
 #, c-format
 msgid "Too long (%d), assuming 1\n"
 msgstr ""
 
-#: scr.c:56
+#: ../scr.c:68
 #, c-format
 msgid "Can't lock screen: %s\n"
 msgstr ""
 
-#: scr.c:133
+#: ../scr.c:190
 #, c-format
 msgid "Couldn't set up video: %s\n"
 msgstr ""
 
-#: scr.c:138
-msgid "BK-0010 Emulator"
-msgstr ""
-
-#: scr.c:138
-msgid "BK-0010"
-msgstr ""
-
-#: service.c:88
-msgid "ev_register(): no free events\n"
-msgstr ""
-
-#: sound.c:114
+#: ../sound.c:118
+#, c-format
 msgid "sound_init called\n"
 msgstr ""
 
-#: sound.c:116
+#: ../sound.c:120
+#, c-format
 msgid "Opening audio... "
 msgstr ""
 
-#: sound.c:127
+#: ../sound.c:132
+msgid "Setting 16-bit sound failed"
+msgstr ""
+
+#: ../sound.c:136
+msgid "Setting mono sound failed"
+msgstr ""
+
+#: ../sound.c:143
 #, c-format
 msgid "Warning: %s doesn't support default sample rate of %d (set to %d)\n"
 msgstr ""
 
-#: sound.c:134
+#: ../sound.c:150
 msgid "/dev/dsp: setfragment failed"
 msgstr ""
 
-#: sound.c:140
+#: ../sound.c:156
 msgid "/dev/dsp: getbksize failed"
 msgstr ""
 
-#: sound.c:144
+#: ../sound.c:160
 #, c-format
 msgid "Warning: asked for sound delay 1/%d sec, got 1/%d sec\n"
 msgstr ""
 
-#: sound.c:152
+#: ../sound.c:168
+#, c-format
 msgid "Warning: sound quality may be low\n"
 msgstr ""
 
-#: sound.c:159
+#: ../sound.c:175
+#, c-format
 msgid "Failed to allocate sound buffers\n"
 msgstr ""
 
-#: tape.c:33
+#: ../tape.c:43
+#, c-format
 msgid "readtape open successful\n"
 msgstr ""
 
-#: tape.c:51
+#: ../tape.c:65
 #, c-format
 msgid "Tape %s\n"
 msgstr ""
 
-#: tape.c:51
+#: ../tape.c:65 ../tty.c:198
 msgid "OFF"
 msgstr ""
 
-#: tape.c:51
+#: ../tape.c:65 ../tty.c:198
 msgid "ON"
 msgstr ""
 
-#: tape.c:99
+#: ../tape.c:106
+#, c-format
 msgid "End of tape\n"
 msgstr ""
 
-#: tape.c:154
+#: ../tape.c:157
 #, c-format
 msgid "Calling (%s)\n"
 msgstr ""
 
-#: tape.c:168
+#: ../tape.c:171
+#, c-format
 msgid "Closed maketape\n"
 msgstr ""
 
-#: tape.c:199
+#: ../tape.c:202
 #, c-format
 msgid "Will read unix file <%s> under BK name <%s>\n"
 msgstr ""
 
 #. We're not supposed to get here
-#: tape.c:209
+#: ../tape.c:212
+#, c-format
 msgid "Asked for strobe in Idle state?\n"
 msgstr ""
 
-#: tape.c:220
+#: ../tape.c:223
 #, c-format
 msgid "File address will be %o\n"
 msgstr ""
 
-#: tape.c:233
+#: ../tape.c:236
 #, c-format
 msgid "File length will be %o\n"
 msgstr ""
 
-#: tape.c:264
+#: ../tape.c:267
 #, c-format
 msgid "Checksum will be %06o\n"
 msgstr ""
 
 #. 177710
-#: timer.c:54
+#: ../timer.c:55
 #, c-format
 msgid "Writing %06o to timer counter\n"
 msgstr ""
 
 #. 177710
 #. 177711
-#: timer.c:79
+#: ../timer.c:80
 #, c-format
 msgid "Writing %03o to timer counter\n"
 msgstr ""
 
-#: timer.c:125
+#: ../timer.c:126
+#, c-format
 msgid "Setting unknown timer mode bits\n"
 msgstr ""
 
-#: timing.c:270
+#: ../timing.c:271
 #, c-format
 msgid "No timing for instr %06o\n"
 msgstr ""
 
-#: tty.c:202 tty.c:237
+#: ../tty.c:198
+#, c-format
+msgid "Timer %s\n"
+msgstr ""
+
+#: ../tty.c:203 ../tty.c:239 ../tty.c:252
+#, c-format
 msgid "Writing to kbd data register, "
 msgstr ""
 
-#: tty.c:301
+#: ../tty.c:322
 msgid "NAME? "
 msgstr ""
 
-#: tty.c:370
+#: ../tty.c:394
 #, c-format
 msgid "Unexpected event %d\n"
 msgstr ""
 
 #. show help
-#: ui.c:106
+#: ../ui.c:109
+#, c-format
 msgid ""
 "\n"
 "Emulator shell commands:\n"
 "\n"
 msgstr ""
 
-#: ui.c:107
-msgid " 'd' - Dump memory ('d start end' or 'd start'\n"
+#: ../ui.c:110
+#, c-format
+msgid " 'a' - Show assembler code ( a [start [end]] )\n"
 msgstr ""
 
-#: ui.c:108
-msgid " 'e' - Edit memory\n"
+#: ../ui.c:111
+#, c-format
+msgid " 'd' - Dump memory ( d [start [end]] ) \n"
 msgstr ""
 
-#: ui.c:109
+#: ../ui.c:112
+#, c-format
+msgid " 'e' - Edit memory, end with .\n"
+msgstr ""
+
+#: ../ui.c:113
+#, c-format
 msgid " 'g' - Start execution ('g' or 'g 100000' boots the BK0010 computer)\n"
 msgstr ""
 
-#: ui.c:110
+#: ../ui.c:114
+#, c-format
 msgid " 'r' - Register dump\n"
 msgstr ""
 
-#: ui.c:111
+#: ../ui.c:115
+#, c-format
 msgid " 's' - Execute a single instruction\n"
 msgstr ""
 
-#: ui.c:112
+#: ../ui.c:116
+#, c-format
 msgid " 't' - Toggle trace flag\n"
 msgstr ""
 
-#: ui.c:113
+#: ../ui.c:117
+#, c-format
 msgid " 'l' - Load file ('l filename.bin' loads specified file)\n"
 msgstr ""
 
-#: ui.c:114
+#: ../ui.c:118
+#, c-format
 msgid " 'i' - Fire an interrupt\n"
 msgstr ""
 
-#: ui.c:115
+#: ../ui.c:119
+#, c-format
 msgid " 'b' - Set a breakpoint\n"
 msgstr ""
 
-#: ui.c:116
+#: ../ui.c:120
+#, c-format
 msgid " '?' - Emulator help\n"
 msgstr ""
 
-#: ui.c:117
+#: ../ui.c:121
+#, c-format
 msgid " 'h' - Command help\n"
 msgstr ""
 
-#: ui.c:118
+#: ../ui.c:122
+#, c-format
 msgid ""
 " 'q' - Quit\n"
 "\n"
 msgstr ""
 
 #. invalid command
-#: ui.c:124
+#: ../ui.c:128
+#, c-format
 msgid "Invalid command, use d, e, g, r, s, t, l, i, b, q, ? and h for help\n"
 msgstr ""
 
 #. invalid   command
-#: ui.c:215 ui.c:222 ui.c:271 ui.c:312 ui.c:321 ui.c:344 ui.c:372
+#: ../ui.c:219 ../ui.c:226 ../ui.c:275 ../ui.c:316 ../ui.c:325 ../ui.c:348
+#: ../ui.c:376 ../ui.c:478 ../ui.c:485
+#, c-format
 msgid "Bad address\n"
 msgstr ""
 
-#: ui.c:315
+#: ../ui.c:319
+#, c-format
 msgid "write error\n"
 msgstr ""
 
-#: ui.c:361
+#: ../ui.c:365
+#, c-format
 msgid "Bad vector\n"
 msgstr ""
 
-#: ui.c:408
+#: ../ui.c:412
+#, c-format
 msgid "LOAD called\n"
 msgstr ""
 
-#: ui.c:426
+#: ../ui.c:430
 #, c-format
 msgid "Reading %s into %06o... "
 msgstr ""
 
-#: ui.c:428
+#: ../ui.c:432
+#, c-format
 msgid "Possible start addresses:  "
 msgstr ""
 
-#: ui.c:448
+#: ../ui.c:452
 #, c-format
 msgid ""
 "Done.\n"

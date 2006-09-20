@@ -9,7 +9,6 @@
  * service.c - Event handler system and interrupt service.
  */
 
-
 #include "defines.h"
 #include <libintl.h>
 #define _(String) gettext (String)
@@ -29,9 +28,8 @@ event events[NUM_PRI];
  * ev_init() - Initialize the event system.
  */
 
-ev_init()
+void ev_init()
 {
-	int x;
 	pending_interrupts = 0;
 }
 
@@ -39,13 +37,15 @@ ev_init()
  * ev_register() - Register an event.
  */
 
-int
+void
 ev_register( priority, handler, delay, info )
 unsigned priority;
 int (*handler)(); 
 unsigned long delay;	/* in clock ticks */
 d_word info;
 {
+	unsigned ticks = pdp.clock;
+
 
 	if (pending_interrupts & (1 << priority)) {
 		/* There is one pending already */
@@ -71,10 +71,12 @@ d_word info;
  * priority list.
  */
 
-ev_fire( int priority )
+void ev_fire( int priority )
 {
+	unsigned ticks = pdp.clock;
+
 	int x;
-	unsigned long mask;
+	unsigned long mask = 0;
 	switch (priority) {
 		case 0: mask = ~0; break;
 		case 1: mask = ~0; break;
@@ -108,97 +110,3 @@ ev_fire( int priority )
 }
 
 
-/*
- * service() - Handle a Trap.
- */
-
-int
-service( vector )
-d_word vector;
-{
-	register pdp_regs *p = &pdp;
-	int result;
-	d_word oldpsw;
-	d_word oldpc;
-	d_word oldmode;
-	d_word newmode;
-	c_addr vaddr;
-
-	last_branch = p->regs[PC];
-	oldmode = ( p->psw & 0140000 ) >> 14;
-
-	oldpsw = p->psw;
-	oldpc = p->regs[PC];
-	
-	/* If we're servicing an interrupt while a WAIT instruction
-	 * was executing, we need to return after the WAIT.
-	 */
-	if (in_wait_instr) {
-		oldpc += 2;
-		in_wait_instr = 0;
-	}
-
-	if (( result = lc_word( vector, &( p->regs[PC]))) != OK)
-		return result;
-	if (( result = lc_word( vector + 2, &( p->psw ))) != OK)
-		return result;
-
-	if (( result = push( p, oldpsw )) != OK )
-		return result;
-	if (( result = push( p, oldpc )) != OK )
-		return result;
-
-	return OK;
-}
-
-
-/*
- * rti() - Return from Interrupt Instruction.
- */
-
-rti( p )
-register pdp_regs *p;
-{
-	d_word newpsw;
-	d_word newpc;
-	d_word oldmode;
-	d_word newmode;
-	int result;
-
-	last_branch = p->regs[PC];
-	if (( result = pop( p, &newpc )) != OK )
-		return result;
-	if (( result = pop( p, &newpsw )) != OK )
-		return result;
-
-	p->psw = newpsw;
-	p->regs[PC] = newpc;
-
-	return OK;
-}
-
-
-/*
- * rtt() - Return from Interrupt Instruction.
- */
-
-rtt( p )
-register pdp_regs *p;
-{
-	d_word newpsw;
-	d_word newpc;
-	d_word oldmode;
-	d_word newmode;
-	int result;
-
-	last_branch = p->regs[PC];
-	if (( result = pop( p, &newpc )) != OK )
-		return result;
-	if (( result = pop( p, &newpsw )) != OK )
-		return result;
-
-	p->psw = newpsw;
-	p->regs[PC] = newpc;
-
-	return CPU_RTT;
-}
