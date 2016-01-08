@@ -113,7 +113,7 @@ extern int xor();
 extern int fis();
 
 struct _itab sitab0[64] = {
-	halt, waiti, rti, bpt, iot, busreset, rtt, halt,
+	halt, waiti, rti, bpt, iot, busreset, rtt, illegal,
 	halt, halt, halt, halt, halt, halt, halt, halt,
 	illegal, illegal, illegal, illegal, illegal, illegal, illegal, illegal,
 	illegal, illegal, illegal, illegal, illegal, illegal, illegal, illegal,

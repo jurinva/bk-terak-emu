@@ -14,18 +14,6 @@ typedef enum {
 	nopD, rtcD, stepinD, stepoutD, readtsD, readD, writeD, delD
 } disk_cmd;
 
-/*
- * Interleave is necessary for images sent by Mark Riordan.
- * The first line (1, 14, 2, 15, ... seems to work for track 1, but
- * not track 2.
- */
-unsigned char interleave[2][27] = {
-// { 0, 1, 14, 2, 15, 3, 16, 4, 17, 5, 18, 6, 19, 7, 20, 8, 21, 9, 22, 10, 23, 11, 24, 12, 25, 13, 26 },
-// { 0, 1, 14, 2, 15, 3, 16, 4, 17, 5, 18, 6, 19, 7, 20, 8, 21, 9, 22, 10, 23, 11, 24, 12, 25, 13, 26 },
- { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26 },
- { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26 }
- };
-
 typedef enum {
 	enF = 1, headF = 020, intrF = 0100, doneF = 0200,
 	track0F = 01000, delF = 02000, wrprF = 04000, crcF = 010000,
@@ -161,8 +149,9 @@ tdisk_read(c_addr addr, d_word *word) {
 			case readD:
 				fprintf(stderr, "Reading track %d, sector %d\n",
 					pdt->track, pdt->cursec);
-				pdt->ptr = pdt->image + (pdt->track-1)*SECPERTRACK*SECSIZE +
-					(interleave[(pdt->track-1)&1][pdt->cursec]-1)*SECSIZE;
+				pdt->ptr = pdt->image +
+					pdt->track*SECPERTRACK*SECSIZE +
+					(pdt->cursec-1)*SECSIZE;
 				break;
 		}
 		pdt->inprogress = 0;

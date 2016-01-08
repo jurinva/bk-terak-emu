@@ -328,7 +328,7 @@ tty_keyevent(SDL_Event * pev) {
 		return;
 	    }
 	    case TTY_SWITCH:
-		scr_switch();
+		scr_switch(0, 0);
 		return;
 	    default:
 		c = special_keys[k];
@@ -384,6 +384,9 @@ tty_recv()
 	    case SDL_MOUSEBUTTONUP:
 	    case SDL_MOUSEMOTION:
 		mouse_event(&ev);
+		break;
+	    case SDL_VIDEORESIZE:
+		scr_switch(ev.resize.w, ev.resize.h);
 		break;
 	    case SDL_QUIT:
 		exit(0);

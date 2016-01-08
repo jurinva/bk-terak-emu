@@ -7,16 +7,15 @@
 #include <libintl.h>
 #define _(String) gettext (String)
 
-#define SOUND_FREQ      44100
-#define SOUND_EXPONENT	10
+#define SOUND_EXPONENT	(8+io_sound_freq/20000)
 #define SOUND_BUFSIZE   (1<<SOUND_EXPONENT)		/* about 1/43 sec */
 #define SOUND_FRAGMENTS	3
 #define MAX_SOUND_AGE	~0	/* always play */ 
 
 unsigned io_max_sound_age = MAX_SOUND_AGE;
 unsigned io_sound_age = MAX_SOUND_AGE;	/* in io_sound_pace's since last change */
-unsigned io_sound_bufsize = SOUND_BUFSIZE,
-	io_sound_freq = SOUND_FREQ,
+unsigned io_sound_bufsize,
+	io_sound_freq = 11025,
 	io_sound_pace;
 double io_sound_count;
 extern unsigned io_sound_val, covox_age;
@@ -24,7 +23,7 @@ extern unsigned char covox_val;
 extern flag_t nflag, fullspeed;
 
 typedef struct {
-	unsigned char * buf;
+	short * buf;
 	unsigned int ptr;
 	SDL_mutex * lock;
 
@@ -42,12 +41,12 @@ int write_buffer(void * dummy)
     while (1) {
 	SDL_mutexP(sound_buf[0].lock);
 	if (io_sound_fd == -1) return 0;
-	write(io_sound_fd, sound_buf[0].buf, sound_buf[0].ptr);
+	write(io_sound_fd, sound_buf[0].buf, sound_buf[0].ptr*sizeof(short));
 	sound_buf[0].ptr = 0;
 	SDL_mutexV(sound_buf[0].lock);
 	SDL_mutexP(sound_buf[1].lock);
 	if (io_sound_fd == -1) return 0;
-	write(io_sound_fd, sound_buf[1].buf, sound_buf[1].ptr);
+	write(io_sound_fd, sound_buf[1].buf, sound_buf[1].ptr*sizeof(short));
 	sound_buf[1].ptr = 0;
 	SDL_mutexV(sound_buf[1].lock);
     }
@@ -62,7 +61,7 @@ sound_flush() {
 		 * matter.
 		 */
 		if (sound_buf[cur_buf].ptr != 0) {
-			write(io_sound_fd, sound_buf[cur_buf].buf, sound_buf[cur_buf].ptr);
+			write(io_sound_fd, sound_buf[cur_buf].buf, sound_buf[cur_buf].ptr * sizeof(short));
 			ioctl(io_sound_fd, SNDCTL_DSP_POST);
 			sound_buf[cur_buf].ptr = 0;
 			cur_buf = !cur_buf;
@@ -70,12 +69,12 @@ sound_flush() {
 		return;
 	}
 	while (ticks >= io_sound_count) {
-		unsigned char * p =
+		short * p =
 			&sound_buf[cur_buf].buf[sound_buf[cur_buf].ptr++];
 		if (io_sound_age < 1000)
-			*p = io_sound_val^covox_val;
+			*p = io_sound_val + covox_val << 4;
 		else
-			*p = covox_val;
+			*p = (covox_val << 4) + synth_next();
 		io_sound_count += io_sound_pace;
 		io_sound_age++;
 		covox_age++;
@@ -87,7 +86,7 @@ sound_flush() {
 			/* release current buffer to be played */
 			SDL_mutexV(sound_buf[cur_buf].lock);
 #else
-			write(io_sound_fd, sound_buf[cur_buf].buf, sound_buf[cur_buf].ptr);
+			write(io_sound_fd, sound_buf[cur_buf].buf, sound_buf[cur_buf].ptr * sizeof(short));
 			sound_buf[cur_buf].ptr = 0;
 #endif
 			cur_buf = !cur_buf;
@@ -124,12 +123,24 @@ sound_init() {
 		fprintf(stderr, _("Done.\n"));
 	} else {
 		perror("/dev/dsp");
+		nflag = 0;
+		return;
+	}
+	
+	int fmt = 16;
+	if (-1 == ioctl(io_sound_fd, SNDCTL_DSP_SETFMT, &fmt)) {
+		perror(_("Setting 16-bit sound failed"));
+	}
+	fmt = 1;
+	if (-1 == ioctl(io_sound_fd, SNDCTL_DSP_CHANNELS, &fmt)) {
+		perror(_("Setting mono sound failed"));
 	}
 
 	/* Setting desired frequency */
+	int sf = io_sound_freq;
 	ioctl(io_sound_fd, SNDCTL_DSP_SPEED, &io_sound_freq);
-	if (io_sound_freq != SOUND_FREQ) {
-		fprintf(stderr, _("Warning: %s doesn't support default sample rate of %d (set to %d)\n"), "/dev/dsp", SOUND_FREQ, io_sound_freq);
+	if (io_sound_freq != sf) {
+		fprintf(stderr, _("Warning: %s doesn't support default sample rate of %d (set to %d)\n"), "/dev/dsp", sf, io_sound_freq);
 	}
 	io_sound_pace = TICK_RATE/io_sound_freq;
 
@@ -158,8 +169,8 @@ sound_init() {
 		}
 	}
 	sound_buf[0].ptr = sound_buf[1].ptr = 0;
-	sound_buf[0].buf = malloc(io_sound_bufsize);
-	sound_buf[1].buf = malloc(io_sound_bufsize);
+	sound_buf[0].buf = malloc(io_sound_bufsize * sizeof(short));
+	sound_buf[1].buf = malloc(io_sound_bufsize * sizeof(short));
 	if (!sound_buf[1].buf) {
 		fprintf(stderr, _("Failed to allocate sound buffers\n"));
 		exit(1);

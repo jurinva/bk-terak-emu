@@ -5,13 +5,14 @@
 #define _(String) gettext (String)
 
 SDL_Surface * screen;
-flag_t cflag = 0, dblflag = 0;
+flag_t cflag = 0;
 int cur_shift = 0;
 int cur_width = 0;	/* 0 = narrow, !0 = wide */
+int horsize = 512, vertsize = 512;
 
 /* Scan lines */
-unsigned char dirty[512];
-SDL_Surface * lines[512];
+unsigned char dirty[1024];
+SDL_Surface * lines[1024];
 
 /*
  * The colors are ordered in the HW order, not in the "Basic" order.
@@ -38,7 +39,7 @@ SDL_Color palettes[16][5] = {
 
 unsigned scr_dirty = 0;
 
-unsigned char req_page[512], req_palette[512];
+unsigned char req_page[1024], req_palette[1024];
 unsigned char active_palette, active_page;
 unsigned char half_frame = 0;
 
@@ -47,21 +48,17 @@ int lower_porch = 3;	/* Default */
 
 #define LINES_TOTAL     (256+upper_porch+lower_porch)
 
+Uint16 horbase[513], vertbase[257];
+
 /*
  * Set the pixel at (x, y) to the given value
  * NOTE: The surface must be locked before calling this!
  */
-static inline void putpixel1(SDL_Surface * s, int x, Uint32 pixel)
+static inline void putpixels(SDL_Surface * s, int x, Uint32 pixel)
 {
-    Uint8 *p = (Uint8 *)s->pixels + x;
-    *p = pixel;
-}
-
-/* Puts 2 pixels at once for double width mode */
-static inline void putpixel2(SDL_Surface * s, int x, Uint32 pixel)
-{
-    Uint16 *p = (Uint16 *)s->pixels + x;
-    *p = pixel<<8|pixel;
+    Uint8 *p = (Uint8 *)s->pixels + horbase[x];
+    int n = horbase[x+1] - horbase[x];
+    do *p++ = pixel; while (--n);
 }
 
 static void lock() {
@@ -101,7 +98,7 @@ int scr_write(int bufno, c_addr addr, d_word wrd)
 			scr_dirty++;
 		}
 		for (i = 16; i; i--, dest_x++, wrd >>= 1) {
-			putpixel1(s, dest_x, (wrd & 1) << 2);
+			putpixels(s, dest_x, (wrd & 1) << 2);
 		}
 	} else {
 		int i;
@@ -115,7 +112,7 @@ int scr_write(int bufno, c_addr addr, d_word wrd)
 			scr_dirty++;
 		}
 		for(i = 8; i; i--, dest_x++, wrd >>= 2) {
-			(dblflag?putpixel2:putpixel1)(s, dest_x, wrd & 3);
+			putpixels(s, dest_x, wrd & 3);
 		}
 	}
 	return OK;
@@ -160,6 +157,18 @@ extern void scr_refresh_bk0011_2(unsigned shift, unsigned full);
 
 void (*scr_refresh)(unsigned, unsigned);
 
+void
+setup_bases() {
+    int i;
+    int horpix = (cflag ? 256 : 512);
+    for (i = 0; i <= horpix; i++) {
+	horbase[i] = i * horsize / horpix;
+    }
+    for (i = 0; i <= 256; i++) {
+	vertbase[i] = i * vertsize / 256;
+    }
+}
+
 scr_init() {
 
     extern unsigned bk_icon[];
@@ -175,9 +184,8 @@ scr_init() {
 			0xff000000, 0xff0000, 0xff00, 0xff),
 	compute_icon_mask());
 	
-    screen = SDL_SetVideoMode(cflag && !dblflag ? 256 : 512,
-	 dblflag ? 512 : 256, 0,
-	 SDL_HWSURFACE|SDL_DOUBLEBUF|SDL_ANYFORMAT|SDL_HWPALETTE);
+    screen = SDL_SetVideoMode(horsize, vertsize, 0,
+	 SDL_SWSURFACE|SDL_DOUBLEBUF|SDL_ANYFORMAT|SDL_HWPALETTE|SDL_RESIZABLE);
     if (screen == NULL) {
         fprintf(stderr, _("Couldn't set up video: %s\n"),
                         SDL_GetError());
@@ -198,10 +206,10 @@ scr_init() {
     }
 
     /* Create palettized surfaces for scan lines for the highest possible
-     * resolution (so far width 512). 
+     * resolution (so far width 1024). 
      */
-    for (i = 0; i < 512; i++) {
-	lines[i] = SDL_CreateRGBSurface(SDL_SWSURFACE, 512, 1,
+    for (i = 0; i < 1024; i++) {
+	lines[i] = SDL_CreateRGBSurface(SDL_SWSURFACE, 1024, 1,
 		8, 0, 0, 0, 0);
 	if (!lines[i]) {
 		fprintf(stderr, "Couldn't set up video: %s\n",
@@ -215,36 +223,41 @@ scr_init() {
     SDL_ShowCursor(SDL_DISABLE);
     scan_line_duration = TICK_RATE/(LINES_TOTAL*50);
     scr_refresh = bkmodel ?
-	dblflag ? scr_refresh_bk0011_2 :
+	vertsize != 256  ? scr_refresh_bk0011_2 :
 		scr_refresh_bk0011_1 :
 	scr_refresh_bk0010;
+    setup_bases();
 }
 
-/* Cyclically switches between color/b-w and single/double size modes:
- * single color -> double color -> double b/w -> single b/w
+/*
+ * Switches to the new screen size, or, if called with (0, 0),
+ * switches between color and B/W.
  */
-scr_switch() {
+scr_switch(int hsize, int vsize) {
     int i;
-    if (cflag)
-	if (dblflag)
-		cflag = 0;
-	else
-		dblflag = 1;
-    else if (dblflag)
-		dblflag = 0;
-	else
-		cflag = 1; 
 
-    screen = SDL_SetVideoMode(cflag && !dblflag ? 256 : 512,
-         dblflag ? 512 : 256, 0,
-	 SDL_SWSURFACE|SDL_ANYFORMAT|SDL_HWPALETTE|SDL_DOUBLEBUF);
+    if (hsize | vsize) {
+	horsize = hsize;
+	vertsize = vsize;
+	if (horsize < 512) horsize = 512;
+	if (vertsize < 256) vertsize = 256;
+	if (horsize > 1024) horsize = 1024;
+	if (vertsize > 1024) vertsize = 1024;
+    } else {
+	cflag = !cflag;
+    }
+    screen = SDL_SetVideoMode(horsize, vertsize, 0,
+	 SDL_SWSURFACE|SDL_ANYFORMAT|SDL_HWPALETTE|SDL_DOUBLEBUF|SDL_RESIZABLE);
+
+    setup_bases();   
 
     /* Re-flush both video pages */
     for (i = 0; i < 040000; i+=2) {
 	scr_write(0, i, ram[1][i >> 1]);
 	scr_write(1, i, ram[7][i >> 1]);
     }
-    if (bkmodel) scr_refresh = dblflag ? scr_refresh_bk0011_2 : scr_refresh_bk0011_1;
+    if (bkmodel) scr_refresh = vertsize != 256 ? scr_refresh_bk0011_2 : scr_refresh_bk0011_1;
+
 }
 
 /* Returns the scan line number that is supposedly being displayed "now".
@@ -299,15 +312,12 @@ void
 scr_refresh_bk0010(unsigned shift, unsigned full) {
 	int blit_all = shift != cur_shift || cur_width != full;
 	int i;
-	int doublebuf =
-		screen->flags & (SDL_DOUBLEBUF|SDL_HWSURFACE) ==
-		(SDL_DOUBLEBUF|SDL_HWSURFACE);
 
 	/* If more than a few lines changed, no point
 	 * doing separate UpdateRect's for each line.
 	 */
-	int update_all = blit_all || doublebuf || scr_dirty >= 4;
-	int width = cflag && !dblflag ? 256 : 512;
+	int update_all = blit_all || scr_dirty >= 4;
+	int width = horsize;
 	int nlines = full ? 256 : 64;
 	static SDL_Rect srcrect = {0, 0, 0, 1};
 	static SDL_Rect dstrect = {0, 0, 0, 0};
@@ -315,18 +325,16 @@ scr_refresh_bk0010(unsigned shift, unsigned full) {
 	for (i = 0; i < nlines; i++) {
 		int line = (i + shift) & 0xFF;
 		SDL_Surface * l = lines[line];
-		dstrect.y = i << dblflag;
+		dstrect.y = vertbase[i];
+		int vertstretch = vertbase[i+1]-vertbase[i];
 		if (dirty[line] | blit_all) {
-			SDL_BlitSurface(l, &srcrect, screen, &dstrect);
-			if (!update_all) {
-				SDL_UpdateRect(screen, 0, dstrect.y, width, 1);
-			}
-			if (dblflag) {
-				dstrect.y++;
+			int n = vertstretch-1;
+			do {
 				SDL_BlitSurface(l, &srcrect, screen, &dstrect);
-				if (!update_all) {
-					SDL_UpdateRect(screen, 0, dstrect.y, width, 1);
-				}
+				dstrect.y++;
+			} while (n--);
+			if (!update_all) {
+				SDL_UpdateRect(screen, 0, vertbase[i], width, vertstretch);
 			}
 		}
 	}
@@ -334,9 +342,9 @@ scr_refresh_bk0010(unsigned shift, unsigned full) {
 	memset(dirty, 0, 256);
 	if (!full && cur_width) {
 		/* Black out the low 3/4 of the screen */
-		dstrect.x = 0; dstrect.y = 64<<dblflag;
+		dstrect.x = 0; dstrect.y = vertbase[64];
 		dstrect.w = width;
-		dstrect.h = 192<<dblflag;
+		dstrect.h = vertbase[256]-vertbase[64];
 		SDL_FillRect(screen, &dstrect, 0);
 	}
 	cur_width = full;
@@ -356,14 +364,11 @@ void
 scr_refresh_bk0011_1(unsigned shift, unsigned full) {
 	int blit_all = change_req || shift != cur_shift || cur_width != full;
 	int i;
-	int doublebuf =
-		screen->flags & (SDL_DOUBLEBUF|SDL_HWSURFACE) ==
-		(SDL_DOUBLEBUF|SDL_HWSURFACE);
 
 	/* If more than a few lines changed, no point
 	 * doing separate UpdateRect's for each line.
 	 */
-	int update_all = blit_all || doublebuf || scr_dirty >= 4;
+	int update_all = blit_all || scr_dirty >= 4;
 	int width = cflag ? 256 : 512;
 	int do_palette = change_req || shift != cur_shift;
 	int nlines = full ? 256 : 64;
@@ -386,7 +391,7 @@ scr_refresh_bk0011_1(unsigned shift, unsigned full) {
 			}
 		}
 	}
-	memset(dirty, 0, 512);
+	memset(dirty, 0, 1024);
 	if (!full && cur_width) {
 		/* Black out the low 3/4 of the screen */
 		dstrect.x = 0; dstrect.y = 64;
@@ -407,40 +412,42 @@ void
 scr_refresh_bk0011_2(unsigned shift, unsigned full) {
 	int blit_all = change_req || shift != cur_shift || cur_width != full;
 	int i;
-	int doublebuf =
-		screen->flags & (SDL_DOUBLEBUF|SDL_HWSURFACE) ==
-		(SDL_DOUBLEBUF|SDL_HWSURFACE);
 
 	/* If more than a few lines changed, no point
 	 * doing separate UpdateRect's for each line.
 	 */
-	int update_all = blit_all || doublebuf || scr_dirty >= 4;
+	int update_all = blit_all || scr_dirty >= 4;
+	int width = horsize;
 	int do_palette = change_req || shift != cur_shift;
-	int nlines = full ? 512 : 128;
+	int nlines = full ? vertsize : vertbase[64];
 	static SDL_Rect srcrect = {0, 0, 512, 1};
+	srcrect.w = width;
 	static SDL_Rect dstrect = {0, 0, 0, 0};
-	for (i = 0; i < nlines; i++) {
-		int line = (i/2 + shift) & 0xFF;
-		unsigned physline = 256*req_page[i]+line;
+	int j;
+	for (i = 0, j = 0; i < nlines; i++) {
+		// The next line is the reverse mapping of vertbase
+		if (vertbase[j+1] == i) j++;
+		int line = (j + shift) & 0xFF;
+		unsigned physline = 256*req_page[2*j]+line;
 		SDL_Surface * l = lines[physline];
 		dstrect.y = i;
 		if (dirty[physline] | blit_all) {
 			if (do_palette) {
 				SDL_SetPalette(l, SDL_LOGPAL,
-					palettes[req_palette[i]], 0, 5);
+					palettes[req_palette[2*j+(i&1)]], 0, 5);
 			}
 			SDL_BlitSurface(l, &srcrect, screen, &dstrect);
 			if (!update_all) {
-				SDL_UpdateRect(screen, 0, dstrect.y, 512, 1);
+				SDL_UpdateRect(screen, 0, dstrect.y, width, 1);
 			}
 		}
 	}
-	memset(dirty, 0, 512);
+	memset(dirty, 0, vertsize);
 	if (!full && cur_width) {
 		/* Black out the low 3/4 of the screen */
-		dstrect.x = 0; dstrect.y = 128;
-		dstrect.w = 512;
-		dstrect.h = 384;
+		dstrect.x = 0; dstrect.y = vertbase[64];
+		dstrect.w = width;
+		dstrect.h = vertsize - dstrect.y;
 		SDL_FillRect(screen, &dstrect, 0);
 	}
 	cur_width = full;

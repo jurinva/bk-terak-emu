@@ -72,6 +72,9 @@ ui()
 				s = buf;
 			}
 			switch( *s++ ) {
+			case 'a':		/* show assembler code*/
+				ui_asm( s );
+				break;
 			case 'd':	/* dump memory */
 				ui_dump( s );
 				break;
@@ -104,8 +107,9 @@ ui()
 				break;
 			case 'h':	/* show help */
 			        fprintf(stderr, _("\nEmulator shell commands:\n\n"));
-			        fprintf(stderr, _(" 'd' - Dump memory ('d start end' or 'd start'\n"));
-			        fprintf(stderr, _(" 'e' - Edit memory\n"));
+			        fprintf(stderr, _(" 'a' - Show assembler code ( a [start [end]] )\n"));
+				fprintf(stderr, _(" 'd' - Dump memory ( d [start [end]] ) \n"));
+			        fprintf(stderr, _(" 'e' - Edit memory, end with .\n"));
 			        fprintf(stderr, _(" 'g' - Start execution ('g' or 'g 100000' boots the BK0010 computer)\n"));
 			        fprintf(stderr, _(" 'r' - Register dump\n"));
 			        fprintf(stderr, _(" 's' - Execute a single instruction\n"));
@@ -449,3 +453,55 @@ char *s;
 	scr_dirty = 1;
 	scr_flush();
 }
+
+
+
+/*
+ * ui_asm() - unassembler from address.
+ */
+
+ui_asm( s )
+char *s;
+{
+	extern disas(c_addr pc, char * dest);
+	static char buf[80];
+	c_addr addr;
+	c_addr new;
+	d_word word;
+	static c_addr last = 0;
+	int count = 0;
+	int good;
+	char last_given = 0;
+
+	s = rd_c_addr( s, &new, &good );
+	if ( good == FALSE ) {
+		fprintf(stderr, _("Bad address\n"));;
+		return;
+	}
+	if ( good != EMPTY ) {
+		addr = new;
+		s = rd_c_addr( s, &new, &good );
+		if ( good == FALSE ) {
+			fprintf(stderr, _("Bad address\n"));;
+			return;
+		}
+		if ( good != EMPTY ) {
+			last = new;
+			last_given = 1;
+		} 
+	} else {
+		addr = last;
+	}
+
+	
+	addr &= 0177777;
+
+	for( count = 0; last_given ? addr < last : count < 23; count++ ) {
+			addr=disas(addr,buf); 
+			puts(buf);
+		}
+	last = addr;
+	last &= 0177777;
+}
+
+

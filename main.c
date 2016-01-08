@@ -29,9 +29,11 @@
 
 
 #include "defines.h"
+#include "scr.h"
 #include <SDL/SDL.h>
 #include <libintl.h>
 #include <locale.h>
+#include <sys/time.h>
 #define _(String) gettext (String)
 
 /*
@@ -81,6 +83,7 @@ flag_t aflag;		/* autoboot flag */
 flag_t nflag;		/* audio flag */
 flag_t mouseflag;	/* mouse flag */
 flag_t covoxflag;	/* covox flag */
+flag_t synthflag;	/* AY-3-8910 flag */
 flag_t plipflag;	/* PLIP flag */
 flag_t fullspeed;	/* do not slow down to real BK speed */
 flag_t traceflag;	/* print all instruction addresses */
@@ -122,16 +125,16 @@ char **argv;
 		fprintf( stderr, _("   -D<file>  D: floppy image file or device (instead of %s)\n"), floppyD );
 		fprintf( stderr, _("   -a        Do not boot automatically\n") );
 		fprintf( stderr, _("   -c        Color mode\n") );
-		fprintf( stderr, _("   -d        Double size mode\n") );
 		fprintf( stderr, _("   -n        Disable sound \n") );
 		fprintf( stderr, _("   -v        Enable Covox\n") );
+		fprintf( stderr, _("   -y        Enable AY-3-8910\n") );
 		fprintf( stderr, _("   -m        Enable mouse\n") );
 		fprintf( stderr, _("   -S        Full speed mode\n") );
 		fprintf( stderr, _("   -s        \"TURBO\" mode (Real overclocked BK)\n") );
 		fprintf( stderr, _("   -R<file>  Specify an alternative ROM file @ 120000.\n") );
 		fprintf( stderr, _("   -r<file>  Specify an alternative ROM file @ 160000.\n") );
 		fprintf( stderr, _("   -T        Disable reading from tape\n") );
-		fprintf( stderr, _("   -t        Trace mode\n") );
+		fprintf( stderr, _("   -t        Trace mode, -t<file> - to file\n") );
 		fprintf( stderr, _("   -l<path>  Enable printer and specify output pathname\n") );
 		fprintf( stderr, _("\n\
 The default ROM files are stored in\n\
@@ -222,6 +225,8 @@ by the environment variable BK_PATH.\n"), romdir );
 		plug_printer();
 	if (covoxflag)
 		plug_covox();
+	if (synthflag)
+		plug_synth();
 	if (plipflag)
 		plug_bkplip();
 	}
@@ -273,6 +278,8 @@ char **argv;
 				break;
 			 case 'K':
 				bkmodel = 9;
+				// Terak has no sound yet, turn sound off
+				nflag = 0;
 				break;
 			 case 'A':
 				floppyA = *++farg ? farg : (argc--,*++narg);
@@ -292,14 +299,14 @@ char **argv;
 			case 'c':
 				cflag = 1;
 				break;
-			case 'd':
-				dblflag = 1;
-				break;
 			case 'n':
 				nflag = 0;
 				break;
 			case 'v':
 				covoxflag = 1;
+				break;
+			case 'y':
+				synthflag = 1;
 				break;
 			case 'm':
 				mouseflag = *(farg+1) ? *(farg+1)-'0' : 1;
@@ -324,6 +331,8 @@ char **argv;
 				break;
 			case 't':
 				traceflag = 1;
+				if (*++farg)
+					strcpy(init_path, farg);
 				break;
 			case 'l':
 				printer_file = *++farg ? farg : (argc--,*++narg);;
@@ -334,10 +343,7 @@ char **argv;
 				break;
 			}
 		} else {
-			if (!init_path[0])
-				strcpy(init_path, *narg);
-			else
-				return -1;
+			return -1;
 		}
 	}
 	return 0;
@@ -648,7 +654,7 @@ d_word pc;
 showemuhelp()
 {
     fprintf(stderr, _("Emulator window hotkeys:\n\n"));
-    fprintf(stderr, _(" ScrollLock - Toggle video mode (B/W, Color) and doublesized display\n"));
+    fprintf(stderr, _(" ScrollLock - Toggle video mode (B/W, Color)\n"));
     fprintf(stderr, _(" Left Super+F11 - Reset emulated machine\n"));
     fprintf(stderr, _(" F12 - Load a file into BK memory\n\n"));
 }

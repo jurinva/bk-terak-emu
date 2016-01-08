@@ -43,6 +43,8 @@
 #include <sgtty.h>
 #include <ctype.h>
 #include <fcntl.h>
+#include <string.h>
+
 /*#include <sys/select.h>	UNCOMMENT for AIX */
 
 
@@ -131,7 +133,7 @@ typedef struct _pdp_regs {
 
 extern d_word rom[4][8192], ram[8][8192], system_rom[8192];
 extern int boot_init(), boot_read(), boot_write(c_addr, d_word), boot_bwrite(c_addr, d_byte);
-extern int scr_init(), scr_write(int, c_addr, d_word), scr_switch();
+extern int scr_init(), scr_write(int, c_addr, d_word), scr_switch(int, int);
 extern int tty_init(), tty_read(), tty_write(c_addr, d_word), tty_bwrite(c_addr, d_byte);
 extern int io_init(), io_read(), io_write(c_addr, d_word), io_bwrite(c_addr, d_byte);
 extern int disk_init(), disk_read(), disk_write(c_addr, d_word), disk_bwrite(c_addr, d_byte);
@@ -144,6 +146,7 @@ extern int line_init(), line_read(), line_write(c_addr, d_word), line_bwrite(c_a
 extern int printer_init(), printer_read(), printer_write(c_addr, d_word), printer_bwrite(c_addr, d_byte);
 extern int mouse_init(), mouse_read(), mouse_write(c_addr, d_word), mouse_bwrite(c_addr, d_byte);
 extern int covox_init(), covox_read(), covox_write(c_addr, d_word), covox_bwrite(c_addr, d_byte);
+extern int synth_init(), synth_read(), synth_write(c_addr, d_word), synth_bwrite(c_addr, d_byte), synth_next(void);
 extern int bkplip_init(), bkplip_read(), bkplip_write(c_addr, d_word), bkplip_bwrite(c_addr, d_byte);
 extern int service(d_word);
 
@@ -197,7 +200,7 @@ extern flag_t in_wait_instr;
 extern unsigned io_sound_val;
 extern flag_t io_stop_happened;
 extern int      io_tape_mode, io_tape_val, io_tape_bit;
-extern flag_t cflag, dblflag, mouseflag, bkmodel, terak, nflag, fullspeed;
+extern flag_t cflag, mouseflag, bkmodel, terak, nflag, fullspeed;
 extern double ticks, io_tape_ticks;     /* in main clock freq, integral */
 extern flag_t timer_intr_enabled;
 

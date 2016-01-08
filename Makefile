@@ -49,14 +49,14 @@ UTILS = maketape readtape
 SRCS =	access.c boot.c branch.c conf.c covox.c double.c ea.c itab.c \
 	main.c service.c ui.c scr.c timer.c tape.c disk.c mouse.c printer.c \
 	single.c weird.c tty.c io.c timing.c sound.c disas.c serial.c bkplip.c \
-	terakdisk.c
+	terakdisk.c synth.c emu2149.c
 OBJS =	access.o boot.o branch.o conf.o covox.o double.o ea.o itab.o icon.o \
 	main.o service.o ui.o scr.o timer.o tape.o disk.o mouse.o printer.o \
 	single.o weird.o tty.o io.o timing.o sound.o disas.o serial.o bkplip.o \
-	terakdisk.o
-INCS =	defines.h scr.h conf.h
+	terakdisk.o synth.o emu2149.o
+INCS =	defines.h scr.h conf.h emu2149.h emutypes.h
 USRCS = readtape.c maketape.c pngtorgba.c
-TEXTS =	README.html configure.in
+TEXTS =	README.html configure.in icon.c
 
 #
 # Build Rules
@@ -72,7 +72,7 @@ icon.c: pngtorgba bk.png
 	./pngtorgba bk.png > icon.c
 
 $(TARGET):	$(OBJS)
-	$(LD) $(CFLAGS) -o $(TARGET) $(OBJS) /usr/lib/libSDL.a -lpthread -L/usr/X11R6/lib -lX11 -lXext -ldl -lm
+	$(LD) $(CFLAGS) -o $(TARGET) $(OBJS) /usr/lib/libSDL.so -lpthread
 
 readtape: readtape.c
 	$(CC) $(CFLAGS) -o readtape readtape.c
@@ -92,7 +92,7 @@ count:
 
 dist:
 	tar czvf bk-terak-emu.`date +%Y.%m.%d`.tar.gz \
-	$(SRCS) $(INCS) $(USRCS) po Rom $(TEXTS) Makefile bk.png
+	--exclude CVS $(SRCS) $(INCS) $(USRCS) po Rom $(TEXTS) Makefile bk.png
 
 depend:
 	makedepend -Dlinux=1 -Y $(SRCS) $(USRCS) $(INCS)
@@ -102,12 +102,12 @@ depend:
 access.o: defines.h
 boot.o: defines.h
 branch.o: defines.h
-conf.o: conf.h defines.h
+conf.o: conf.h defines.h scr.h
 covox.o: defines.h
 double.o: defines.h
 ea.o: defines.h
 itab.o: defines.h
-main.o: defines.h
+main.o: defines.h scr.h
 service.o: defines.h
 ui.o: defines.h
 scr.o: defines.h scr.h
@@ -126,4 +126,7 @@ disas.o: defines.h
 serial.o: defines.h
 bkplip.o: defines.h
 terakdisk.o: defines.h
+synth.o: defines.h emu2149.h emutypes.h
+emu2149.o: emu2149.h emutypes.h
 conf.o: defines.h
+emu2149.o: emutypes.h

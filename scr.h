@@ -16,4 +16,5 @@
 #define LightBlue {128,0,255}
 #define White {255,255,255}
 
+extern int horsize, vertsize;
 

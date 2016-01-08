@@ -125,6 +125,7 @@ void printop(unsigned rm, c_addr * a, char **destp) {
 		if (r == 7) {
 			lc_word(*a, &word);
 			*a += 2;
+			*a &= 0177777;
 			sprintf(*destp, "#%o", word);
 		} else {
 			sprintf(*destp, "(%s)+", regnam[r]);
@@ -142,6 +143,7 @@ void printop(unsigned rm, c_addr * a, char **destp) {
 	case 6:
 		lc_word(*a, &word);
 		*a += 2;
+		*a &= 0177777;
 		if (r == 7) {
 			sprintf(*destp, "%o", (*a + word) & 0177777);
 		} else {
@@ -153,9 +155,10 @@ void printop(unsigned rm, c_addr * a, char **destp) {
 
 /* Returns the PC of the next instruction */
 c_addr disas (c_addr a, char * dest) {
-	d_word inst;
+	d_word inst = 0;
 	lc_word(a, &inst);
 	a += 2;
+	a &= 0177777;
 	char * code = base[inst >> 12];
 	char soffset;
 	unsigned char uoffset;

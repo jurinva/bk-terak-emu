@@ -86,12 +86,12 @@ io_bwrite(c_addr addr, d_byte byte) {
 #define LINE_WST 0176564
 #define LINE_WDT 0176566
 
-FILE * log = 0;
+FILE * irpslog = 0;
 enum { IdleL, NameL, HeaderL, BodyL, TailL } lstate = 0;
 unsigned char rdbuf = 0;
 
 line_init() {
-	log = fopen("irps.log", "w");
+	irpslog = fopen("irps.log", "w");
 }
 
 line_read(addr, word)
@@ -138,7 +138,7 @@ line_bwrite(addr, byte)
 c_addr addr;
 d_byte byte;
 {
-	fputc(byte, log);
+	fputc(byte, irpslog);
 	switch (lstate) {
 	case IdleL:
 		switch (byte) {

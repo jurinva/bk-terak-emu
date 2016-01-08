@@ -141,12 +141,17 @@ pdp_qmap q_covox = {
 	PORT_REG, PORT_SIZE, covox_init, covox_read, covox_write, covox_bwrite
 };
 
+pdp_qmap q_synth = {
+	PORT_REG, PORT_SIZE, synth_init, synth_read, synth_write, synth_bwrite
+};
+
 pdp_qmap q_bkplip = {
 	PORT_REG, PORT_SIZE, bkplip_init, bkplip_read, bkplip_write, bkplip_bwrite
 };
 void plug_printer() { qmap[0] = q_printer; }
 void plug_mouse() { qmap[0] = q_mouse; }
 void plug_covox() { qmap[0] = q_covox; }
+void plug_synth() { qmap[0] = q_synth; }
 void plug_bkplip() { qmap[0] = q_bkplip; }
 
 /* When nothing is connected to the port */
