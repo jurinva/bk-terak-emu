@@ -1,0 +1,63 @@
+#
+# NOTE! Don't add files that are generated in specific
+# subdirectories here. Add them in the ".gitignore" file
+# in that subdirectory instead.
+#
+# NOTE! Please use 'git ls-files -i --exclude-standard'
+# command after changing this file, to see if there are
+# any tracked files which get ignored after the change.
+#
+# Normal rules
+#
+.*
+*.o
+*.patch
+
+#
+# Top-level generic files
+#
+/tags
+/TAGS
+
+#
+# git files that we don't want to ignore even it they are dot-files
+#
+!.gitignore
+!.mailmap
+
+*.orig
+*~
+
+# Autotools.gitignore from https://github.com/github/gitignore/
+
+# http://www.gnu.org/software/automake
+
+Makefile.in
+
+# http://www.gnu.org/software/autoconf
+
+/autom4te.cache
+/aclocal.m4
+/compile
+/configure
+/depcomp
+/install-sh
+/missing
+/stamp-h1
+/ar-lib
+
+# End of template. Additional autoconf and automake files follow.
+
+Makefile
+/everything
+/config.guess
+/config.h
+/config.h.in
+/config.log
+/config.status
+/config.sub
+
+/bk
+/maketape
+/readtape
+irps.log
