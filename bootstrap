@@ -1,0 +1,13 @@
+#!/bin/sh
+
+set -e
+
+set -x
+autoheader
+autoconf -Wall --force
+
+{ set +x; } 2>/dev/null
+
+echo
+echo "You may now run:"
+echo "        ./configure"
