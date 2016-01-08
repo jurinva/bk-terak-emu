@@ -123,6 +123,8 @@ d_word vector;
 	d_word oldmode;
 	d_word newmode;
 	c_addr vaddr;
+	d_word newpsw;
+	d_word newpc;
 
 	last_branch = p->regs[PC];
 	oldmode = ( p->psw & 0140000 ) >> 14;
@@ -138,16 +140,21 @@ d_word vector;
 		in_wait_instr = 0;
 	}
 
-	if (( result = lc_word( vector, &( p->regs[PC]))) != OK)
+	if (( result = lc_word( vector, &newpc)) != OK)
 		return result;
-	if (( result = lc_word( vector + 2, &( p->psw ))) != OK)
+	if (( result = lc_word( vector + 2, &newpsw)) != OK)
 		return result;
+
+	// fprintf(stderr, "Int %o to %06o\n", vector, p->regs[PC]);
+	addtocybuf(-vector);
 
 	if (( result = push( p, oldpsw )) != OK )
 		return result;
 	if (( result = push( p, oldpc )) != OK )
 		return result;
 
+	p->psw = newpsw;
+	p->regs[PC] = newpc;
 	return OK;
 }
 

@@ -143,7 +143,7 @@ by the environment variable BK_PATH.\n"), romdir );
 		fprintf( stderr, _("\nExamples:.\n") );
 		fprintf( stderr, _("   'bk -R./BK.ROM' - Use custom ROM\n") );
 		fprintf( stderr, _("   'bk -a -n -f'   - Developer's mode\n") );
-		fprintf( stderr, _("   'bk -c -d'      - Gaming mode\n\n") );
+		fprintf( stderr, _("   'bk -c'         - Gaming mode\n\n") );
 		exit( -1 );
 	}
 
@@ -195,7 +195,7 @@ by the environment variable BK_PATH.\n"), romdir );
 
 	printf( _("Initializing SDL.\n") );
 
-	if((SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO|SDL_INIT_TIMER)==-1)) {
+	if((SDL_Init(SDL_INIT_VIDEO|SDL_INIT_TIMER)==-1)) {
 		printf( _("Could not initialize SDL: %s.\n"), SDL_GetError());
 		exit(-1);
 	}
@@ -207,7 +207,7 @@ by the environment variable BK_PATH.\n"), romdir );
 	printf( _("SDL initialized.\n") );
 
 	/* Convert BK model to 0010/0011 flag */
-	fake_disk = bkmodel >= 2;
+	fake_disk &= bkmodel >= 2;
 	terak = bkmodel == 9;
 	bkmodel = bkmodel >= 3;
 	tty_open();             /* initialize the tty stuff */
@@ -419,6 +419,15 @@ double ticks_timer = 0.0;
 double ticks_screen = 0.0;
 extern unsigned long pending_interrupts;
 
+int cybuf[1024];
+int cybufidx = 0;
+
+void
+addtocybuf(int val) {
+	cybuf[cybufidx] = val;
+	cybufidx = (cybufidx+1) % 1024;
+}
+
 int
 run_2( p, flag )
 register pdp_regs *p;
@@ -448,6 +457,7 @@ int flag;
 	 */
 
 	do {
+		addtocybuf(p->regs[PC]);
 
 		/*
 		 * Fetch and execute the instruction.
@@ -643,9 +653,40 @@ d_word pc;
 			fake_read_strobe();
 		}
 		break;
+    case 0160250:
+		if (fake_disk)
+			fake_disk_io();
+		break;
     case 0160372:
 		if (fake_disk)
 			fake_sector_io();
+		break;
+    case 0162246:
+		fprintf(stderr, "INDEX ");
+		break;
+    case 0162304:
+		fprintf(stderr, "err\n");
+		break;
+    case 0162312:
+		fprintf(stderr, "good\n");
+		break;
+    case 0160746:
+		fprintf(stderr, "WORK\n");
+		break;
+    case 0162012:
+		fprintf(stderr, "FINDH\n");
+		break;
+    case 0161732:
+		fprintf(stderr, "STREAD\n");
+		break;
+    case 0163004:
+		fprintf(stderr, "GOTO00\n");
+		break;
+    case 0161610:
+		fprintf(stderr, "RDSEC\n");
+		break;
+    case 0163072:
+		fprintf(stderr, "FRESEC\n");
 		break;
     }
     return (pc == breakpoint);

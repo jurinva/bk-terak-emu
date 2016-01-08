@@ -1,6 +1,7 @@
 access.c
 boot.c
 branch.c
+conf.c
 disas.c
 disk.c
 double.c
@@ -14,6 +15,7 @@ scr.c
 service.c
 single.c
 sound.c
+synth.c
 tape.c
 timer.c
 timing.c

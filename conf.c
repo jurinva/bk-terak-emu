@@ -39,14 +39,17 @@ sconf_t sconf[] = {
 
 iconf_t iconf[] = {
 	{ "VertSize", &vertsize, 256, 1024 },
-	{ "HorizSize", &horsize, 512, 1024 },
+	{ "HorizSize", &horsize, 256, 1024 },
 	{ "UpperPorch", &upper_porch, 0, 30 },
 	{ "LowerPorch", &lower_porch, 0, 30 },
 	{ "SoundFreq", &io_sound_freq, 8000, 44100 }
 };
 
 bconf_t bconf[] = {
+	{ "Color", &cflag },
+	{ "FakeDisk", &fake_disk },
 	{ "FakeTape", &fake_tape },
+	{ "FullScreen", &fullscreen },
 	{ "Telegraph", &telegraph_enabled }
 };
 

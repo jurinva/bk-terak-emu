@@ -22,8 +22,6 @@
 #include <linux/if.h>
 #include <linux/if_tun.h>
 #define DEVTAP "/dev/net/tun"
-#else  /* linux */
-#error "TUN device only exists in Linux"
 #endif /* linux */
 
 static int fd = -1;
@@ -36,6 +34,7 @@ static unsigned lasttime;
  * be sent at once.
  */
 bkplip_init() {
+#ifdef linux
   if (fd != -1) return OK;
 
   fd = open(DEVTAP, O_RDWR);
@@ -55,6 +54,7 @@ bkplip_init() {
   }
 
   lasttime = 0;
+#endif
   return OK;
 }
 
@@ -71,6 +71,7 @@ bkplip_read(addr, word)
 c_addr addr;
 d_word *word;
 {
+#ifdef linux
   fd_set fdset;
   struct timeval tv, now;
   int ret;
@@ -102,6 +103,7 @@ d_word *word;
   *word = 1<<15 | ret;
 
   printf("Got packet of length %d\n", ret);
+#endif
   return OK;
 }
 
@@ -113,6 +115,7 @@ bkplip_write(addr, word)
 c_addr addr;
 d_word word;
 {
+#ifdef linux
 	if (word & (1<<15)) {
 		if (txlen) {
 			printf("Sending new packet when %d bytes left from the old one\n",
@@ -135,6 +138,7 @@ d_word word;
 		printf("Sending packet of length %d\n", txbyte);
 		write(fd, plip_buf_tx, txbyte);
 	}
+#endif
 	return OK;
 }
 

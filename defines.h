@@ -40,7 +40,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>		/* COMMENT for vax-bsd */
-#include <sgtty.h>
+/* #include <sgtty.h> */
 #include <ctype.h>
 #include <fcntl.h>
 #include <string.h>
@@ -75,7 +75,6 @@ typedef unsigned char flag_t;	/* for boolean or small value flags */
 typedef struct _pdp_regs {
 	d_word regs[8];		/* general registers */
 	d_byte psw;		/* processor status byte (LSI-11) */
-	d_word sr;		/* switch register */
 	d_word ir;		/* current instruction register */
 	d_word ea_addr;		/* stored address for dest modifying insts */
 	unsigned long total;	/* count of instructions executed */

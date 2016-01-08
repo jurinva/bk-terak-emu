@@ -23,7 +23,8 @@ synth_init() {
 
 synth_read(c_addr addr, d_word *word)
 {
-	*word = PSG_readReg(psg, synth_reg) ^ 0xFF;
+	// *word = PSG_readReg(psg, synth_reg) ^ 0xFF;
+	*word = 0; // BK does not read from AY
 	return OK;
 }
 

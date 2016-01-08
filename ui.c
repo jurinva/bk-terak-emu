@@ -75,6 +75,9 @@ ui()
 			case 'a':		/* show assembler code*/
 				ui_asm( s );
 				break;
+			case 'v':	/* show instruction buffer */
+				ui_viewbuf( s );
+				break;
 			case 'd':	/* dump memory */
 				ui_dump( s );
 				break;
@@ -504,4 +507,31 @@ char *s;
 	last &= 0177777;
 }
 
-
+ui_viewbuf ( char * s )
+{
+	d_word word;
+	int good;
+	char buf[80];
+	extern int cybuf[1024];
+	extern int cybufidx;
+	s = rd_d_word( s, &word, &good );
+	if (good == FALSE ) {
+		fprintf(stderr, _("Bad address\n"));
+		return;
+	}
+	if ( good == EMPTY ) {
+		word = 20;
+	}
+	for (word = (cybufidx - word) & 1023; word != cybufidx; 
+		word = (word + 1) & 1023) {
+		int a = cybuf[word];
+		if (a >= 0) {
+			disas(a, buf);
+			puts(buf);
+		} else if (a == -1) {
+			puts("Returning from disk I/O");
+		} else {
+			printf("Vector %o\n", -a);
+		}
+	}
+}

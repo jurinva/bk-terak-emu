@@ -14,4 +14,4 @@ extern char * floppyA;
 extern char * floppyB;
 extern char * floppyC;
 extern char * floppyD;
-extern flag_t fake_tape, telegraph_enabled;
+extern flag_t fake_tape, fake_disk, telegraph_enabled, fullscreen;

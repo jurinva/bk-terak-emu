@@ -33,7 +33,7 @@
 CC = gcc -std=gnu89
 LD = gcc
 CFLAGS = -g -DSHIFTS_ALLOWED -DEIS_ALLOWED
-# CFLAGS = -O4 -fomit-frame-pointer -DSHIFTS_ALLOWED
+# CFLAGS = -O4 -fomit-frame-pointer # -DSHIFTS_ALLOWED
 
 #
 # Targets
@@ -69,7 +69,8 @@ everything:	$(TARGET) $(UTILS)
 	$(CC) -c $(CFLAGS) $<
 
 icon.c: pngtorgba bk.png
-	./pngtorgba bk.png > icon.c
+	touch icon.c
+	if [ ! -s icon.c ] ; then ./pngtorgba bk.png > icon.c ; fi
 
 $(TARGET):	$(OBJS)
 	$(LD) $(CFLAGS) -o $(TARGET) $(OBJS) /usr/lib/libSDL.so -lpthread

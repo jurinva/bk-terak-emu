@@ -5,14 +5,19 @@
 #define _(String) gettext (String)
 
 SDL_Surface * screen;
-flag_t cflag = 0;
+flag_t cflag = 0, fullscreen = 0;
 int cur_shift = 0;
 int cur_width = 0;	/* 0 = narrow, !0 = wide */
 int horsize = 512, vertsize = 512;
 
 /* Scan lines */
+// The scan lines must be in 8-bit palettized form, as they have
+// to be re-blitted to the screen with their new meaning if the
+// palette changes.
+
 unsigned char dirty[1024];
-SDL_Surface * lines[1024];
+// There are 256 scan lines in each of 2 buffers
+SDL_Surface * lines[512];
 
 /*
  * The colors are ordered in the HW order, not in the "Basic" order.
@@ -39,7 +44,7 @@ SDL_Color palettes[16][5] = {
 
 unsigned scr_dirty = 0;
 
-unsigned char req_page[1024], req_palette[1024];
+unsigned char req_page[512], req_palette[512];
 unsigned char active_palette, active_page;
 unsigned char half_frame = 0;
 
@@ -48,33 +53,22 @@ int lower_porch = 3;	/* Default */
 
 #define LINES_TOTAL     (256+upper_porch+lower_porch)
 
+// It is unlikely that we get a hardware surface, but one can hope
+#define SCREEN_FLAGS    \
+	(SDL_HWSURFACE|SDL_HWACCEL|SDL_ASYNCBLIT|SDL_DOUBLEBUF|SDL_ANYFORMAT|SDL_HWPALETTE|(fullscreen ? SDL_FULLSCREEN : SDL_RESIZABLE))
+
 Uint16 horbase[513], vertbase[257];
 
 /*
  * Set the pixel at (x, y) to the given value
- * NOTE: The surface must be locked before calling this!
+ * NOTE: We never put pixels to the actual screen surface, no locking
+ * is necessary.
  */
 static inline void putpixels(SDL_Surface * s, int x, Uint32 pixel)
 {
     Uint8 *p = (Uint8 *)s->pixels + horbase[x];
     int n = horbase[x+1] - horbase[x];
     do *p++ = pixel; while (--n);
-}
-
-static void lock() {
-	/* Lock the screen for direct access to the pixels */
-	if ( SDL_MUSTLOCK(screen) ) {
-		if ( SDL_LockSurface(screen) < 0 ) {
-			fprintf(stderr, _("Can't lock screen: %s\n"), SDL_GetError());
-			return;
-		}
-	}
-}
-
-static void unlock() {
-    if ( SDL_MUSTLOCK(screen) ) {
-	SDL_UnlockSurface(screen);
-    }
 }
 
 /*
@@ -184,8 +178,7 @@ scr_init() {
 			0xff000000, 0xff0000, 0xff00, 0xff),
 	compute_icon_mask());
 	
-    screen = SDL_SetVideoMode(horsize, vertsize, 0,
-	 SDL_SWSURFACE|SDL_DOUBLEBUF|SDL_ANYFORMAT|SDL_HWPALETTE|SDL_RESIZABLE);
+    screen = SDL_SetVideoMode(horsize, vertsize, 0, SCREEN_FLAGS);
     if (screen == NULL) {
         fprintf(stderr, _("Couldn't set up video: %s\n"),
                         SDL_GetError());
@@ -208,7 +201,7 @@ scr_init() {
     /* Create palettized surfaces for scan lines for the highest possible
      * resolution (so far width 1024). 
      */
-    for (i = 0; i < 1024; i++) {
+    for (i = 0; i < 512; i++) {
 	lines[i] = SDL_CreateRGBSurface(SDL_SWSURFACE, 1024, 1,
 		8, 0, 0, 0, 0);
 	if (!lines[i]) {
@@ -226,6 +219,9 @@ scr_init() {
 	vertsize != 256  ? scr_refresh_bk0011_2 :
 		scr_refresh_bk0011_1 :
 	scr_refresh_bk0010;
+    if (horsize < 512) {
+	    cflag = 1;
+    }
     setup_bases();
 }
 
@@ -235,19 +231,37 @@ scr_init() {
  */
 scr_switch(int hsize, int vsize) {
     int i;
-
+    int old_hor = horsize, old_vert = vertsize;
+    // It is ok to go beyond 1024x1024, but a smaller screen is
+    // returned to no less than 512x256
+    char restore = 0;
     if (hsize | vsize) {
 	horsize = hsize;
 	vertsize = vsize;
-	if (horsize < 512) horsize = 512;
-	if (vertsize < 256) vertsize = 256;
+	/* Allow horizontal size down to 256 in color mode */
+	if (horsize < 512) {
+	       if (cflag && horsize < 256) {
+		       restore = 1;
+		       horsize = 256;
+	       } else if (!cflag) {
+		       restore = 1;
+		       horsize = 512;
+	       }
+	}
+	if (vertsize < 256) { restore = 1; vertsize = 256; }
 	if (horsize > 1024) horsize = 1024;
 	if (vertsize > 1024) vertsize = 1024;
     } else {
 	cflag = !cflag;
+	if (!cflag && horsize < 512) {
+		restore = 1;
+		horsize = 512;
+	}
     }
-    screen = SDL_SetVideoMode(horsize, vertsize, 0,
-	 SDL_SWSURFACE|SDL_ANYFORMAT|SDL_HWPALETTE|SDL_DOUBLEBUF|SDL_RESIZABLE);
+
+    if (restore || old_hor != horsize || old_vert != vertsize) { 
+	screen = SDL_SetVideoMode(horsize, vertsize, 0, SCREEN_FLAGS);	
+    }
 
     setup_bases();   
 
@@ -369,7 +383,7 @@ scr_refresh_bk0011_1(unsigned shift, unsigned full) {
 	 * doing separate UpdateRect's for each line.
 	 */
 	int update_all = blit_all || scr_dirty >= 4;
-	int width = cflag ? 256 : 512;
+	int width = horsize;
 	int do_palette = change_req || shift != cur_shift;
 	int nlines = full ? 256 : 64;
 	static SDL_Rect srcrect = {0, 0, 0, 1};
@@ -428,7 +442,7 @@ scr_refresh_bk0011_2(unsigned shift, unsigned full) {
 		// The next line is the reverse mapping of vertbase
 		if (vertbase[j+1] == i) j++;
 		int line = (j + shift) & 0xFF;
-		unsigned physline = 256*req_page[2*j]+line;
+		unsigned physline = 256*req_page[2*j+(i&1)]+line;
 		SDL_Surface * l = lines[physline];
 		dstrect.y = i;
 		if (dirty[physline] | blit_all) {

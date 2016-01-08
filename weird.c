@@ -45,6 +45,8 @@ int waiti( p )
 register pdp_regs *p;
 {
 	extern unsigned long pending_interrupts;
+	if (pending_interrupts)
+		return OK;
 	p->regs[PC] -= 2;	/* repeat instruction */
 	return CPU_WAIT;
 }

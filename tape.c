@@ -10,7 +10,7 @@ FILE * tape_read_file = NULL;
 FILE * tape_write_file = NULL;
 unsigned char tape_status = 1; /* 0 = tape moving, 1 = tape stopped */
 
-unsigned char fake_tape = 1;	/* Default */
+flag_t fake_tape = 1;	/* Default */
 
 extern int tapeflag;
 double tape_read_ticks, tape_write_ticks;

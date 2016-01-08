@@ -10,6 +10,10 @@
 #define SECSIZE 512
 #define SECPERTRACK 10
 
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
+
 /* Why bother, let's memory-map the files! */
 typedef struct {
 	unsigned length;
@@ -32,18 +36,19 @@ static int selected = -1;
 void do_disk_io(int drive, int blkno, int nwords, int ioaddr);
 
 void disk_open(disk_t * pdt, char * name) {
-	int fd = open(name, O_RDWR);
+	int fd = open(name, O_RDWR|O_BINARY);
 	if (fd == -1) {
 		pdt->ro = 1;
-		fd = open(name, O_RDONLY);
+		fd = open(name, O_RDONLY|O_BINARY);
 	}
 	if (fd == -1) {
 		perror(name);
 		return;
 	}
 	pdt->length = lseek(fd, 0, SEEK_END);
+	if (pdt->length == -1) perror("seek");
 	if (pdt->length % SECSIZE) {
-		fprintf(stderr, _("%s is not an integer number of blocks\n"), name);
+		fprintf(stderr, _("%s is not an integer number of blocks: %d bytes\n"), name, pdt->length);
 		close(fd);
 		return;
 	}
@@ -189,7 +194,8 @@ disk_read(c_addr addr, d_word *word) {
 #endif
 		} else {
 			static dummy = 0x5555;
-			fprintf(stderr, _("Reading 177132 when no I/O is progress?\n"));
+			fprintf(stderr, "?");
+			// fprintf(stderr, _("Reading 177132 when no I/O is progress?\n"));
 			*word = dummy = ~dummy;
 		}
 	break;
@@ -220,6 +226,8 @@ disk_write(c_addr addr, d_word word) {
 		if (selected >= 0) {
 			pdt = &disks[selected];
 			pdt->inprogress |= !! (word & 0400);
+			fprintf(stderr, "Drive %d i/o %s\n", selected,
+				pdt->inprogress ? "ON" : "OFF");
 		}
 		break;
 	case 2:
