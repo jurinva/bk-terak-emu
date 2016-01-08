@@ -115,6 +115,7 @@ ui_dump(char *s)
 	static c_addr last = 0;
 	int count = 0;
 	int good;
+	FILE *f = stdout;
 
 	s = rd_c_addr( s, &new, &good );
 	if ( good == FALSE ) {
@@ -130,6 +131,18 @@ ui_dump(char *s)
 		}
 		if ( good != EMPTY ) {
 			last = new;
+
+			while (isspace(*s)) {
+				s++;
+			}
+
+			if (*s) {
+				f = fopen(s, "wb");
+				if (!f) {
+					perror(s);
+					return;
+				}
+			}
 		} else {
 			last = addr + (DWIDTH * 8);
 		}
@@ -143,17 +156,21 @@ ui_dump(char *s)
 
 	for( ; addr != last; addr = (addr + 2) & 0177777 ) {
 		if (( count % DWIDTH ) == 0 ) {
-			printf( "%06o: ", addr );
+			fprintf(f, "%06o: ", addr);
 		}
 		if (lc_word( addr, &word ) == CPU_OK) {
-			printf( "%06o ", word );
+			fprintf(f, "%06o ", word);
 		} else {
-			printf( "XXXXXX " );
+			fprintf(f, "XXXXXX ");
 		}
 		if (( count % DWIDTH ) == ( DWIDTH - 1 )) {
-			putchar( '\n' );
+			fprintf(f, "\n");
 		}
 		++count;
+	}
+
+	if (f != stdout) {
+		fclose(f);
 	}
 }
 
@@ -465,7 +482,7 @@ ui()
 			case 'h':	/* show help */
 			        fprintf(stderr, _("\nEmulator shell commands:\n\n"));
 			        fprintf(stderr, _(" 'a' - Show assembler code ( a [start [end]] )\n"));
-				fprintf(stderr, _(" 'd' - Dump memory ( d [start [end]] ) \n"));
+				fprintf(stderr, _(" 'd' - Dump memory ( d [start [end [filename]]] ) \n"));
 			        fprintf(stderr, _(" 'e' - Edit memory, end with .\n"));
 			        fprintf(stderr, _(" 'g' - Start execution ('g' or 'g 100000' boots the BK0010 computer)\n"));
 			        fprintf(stderr, _(" 'r' - Register dump\n"));
